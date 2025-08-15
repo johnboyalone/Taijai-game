@@ -16,13 +16,13 @@
         <div class="splash-content">
             <h1 class="splash-title">เกม<br>ทายเลขทายใจ</h1>
             <div class="instructions">
-                <h2>วิธีการเล่น (ใหม่)</h2>
+                <h2>วิธีการเล่น (4 คน)</h2>
                 <ol>
-                    <li>ผู้เล่นทุกคนตั้งเลขลับ 4 หลักของตัวเอง (เลขซ้ำได้)</li>
-                    <li>ในแต่ละตา ผู้เล่นจะเลือกทายเลขของผู้เล่นคนอื่น 1 คน</li>
-                    <li>เกมจะบอกใบ้ว่าทาย **"ถูกเลข ถูกตำแหน่ง" (Strike)** หรือ **"ถูกเลข ผิดตำแหน่ง" (Ball)** กี่ตัว</li>
-                    <li>เมื่อมั่นใจในคำตอบของใครคนใดคนหนึ่ง ให้กด "ส่งคำตอบสุดท้าย"</li>
-                    <li>ใครตอบถูกก่อนเป็นผู้ชนะ!</li>
+                    <li>ผู้เล่น 2-4 คน จะได้รับเลขลับ 4 หลักของตัวเอง</li>
+                    <li>เลือกเป้าหมายที่จะทายเลข แล้วทายเลขของเป้าหมายนั้น</li>
+                    <li>เมื่อมั่นใจ ให้ "ส่งคำตอบสุดท้าย" เพื่อกำจัดเป้าหมาย</li>
+                    <li>ถ้าตอบผิด จะเสียโอกาส (มี 3 ครั้ง) ถ้าโอกาสหมดจะแพ้</li>
+                    <li>คนที่อยู่รอดเป็นคนสุดท้ายคือผู้ชนะ!</li>
                 </ol>
                 <p class="start-prompt">(แตะที่หน้าจอเพื่อไปต่อ)</p>
             </div>
@@ -122,32 +122,34 @@
             <span id="turn-text">กำลังรอ...</span>
         </div>
         <div class="main-container">
-            <div class="game-header-numbers">
-                <div class="header-number-box">
-                    <div class="header-title">⭐ เลขของเรา</div>
-                    <div id="our-number-display" class="input-container"></div>
-                </div>
+            <!-- Our Number Section -->
+            <div class="section">
+                <h2 class="section-title">⭐ เลขของเรา</h2>
+                <div id="our-number-display" class="input-container"></div>
             </div>
-            
-            <!-- *** แก้ไขแล้ว: ส่วนแสดงผู้เล่นอื่น *** -->
+            <!-- Target Selection Section -->
             <div class="section">
                 <h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2>
-                <div id="player-summary-grid" class="player-summary-grid">
-                    <!-- JavaScript จะสร้างข้อมูลผู้เล่นที่นี่ -->
-                </div>
+                <div id="player-summary-grid" class="player-summary-grid"></div>
             </div>
-
+            <!-- History Section -->
             <div class="section">
                 <h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2>
                 <div id="history-log" class="history-log"></div>
             </div>
-
+            <!-- Guess Input Section -->
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
-                <div id="guess-number-container" class="input-container"></div>
+                <!-- *** โค้ดที่เพิ่มกลับเข้ามา *** -->
+                <div id="guess-number-container" class="input-container">
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                </div>
                 <div id="number-pad-container" class="number-grid"></div>
             </div>
-
+            <!-- Final Answer Section -->
             <div class="final-answer-section">
                 <div class="final-answer-chances">
                     โอกาสตอบ: 
@@ -165,9 +167,9 @@
         <div class="game-over-container">
             <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
             <h2 id="winner-name" class="winner-name"></h2>
-            <p id="game-over-message" class="game-over-message">คุณทายเลขของเพื่อนได้สำเร็จ!</p>
-            <div id="game-over-numbers-container" class="game-over-numbers">
-                <!-- JavaScript จะสร้างผลลัพธ์ที่นี่ -->
+            <p id="game-over-message" class="game-over-message"></p>
+            <div class="game-over-numbers" id="game-over-numbers-container">
+                <!-- Numbers will be added here by JS -->
             </div>
             <div class="game-over-buttons">
                 <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
