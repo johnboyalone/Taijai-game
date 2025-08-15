@@ -125,7 +125,31 @@ body {
 .waiting-room-title { margin-bottom: 15px; }
 .room-code-display { background-color: #edf2f7; padding: 10px; border-radius: 12px; margin-bottom: 20px; }
 .player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
-.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
+
+.player-slot {
+    display: flex;
+    align-items: center;
+    background-color: #f7fafc;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    gap: 15px;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease, border 0.4s ease, margin 0.4s ease;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    margin-bottom: 0;
+}
+
+.player-slot.active {
+    max-height: 100px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-width: 1px;
+}
+
 .player-icon {
     width: 40px;
     height: 40px;
@@ -160,7 +184,7 @@ body {
 /* ======== MAIN GAME SCREEN ======== */
 #main-game-screen {
     background-color: #e9f7ff;
-    padding-top: 50px; /* Space for turn indicator */
+    padding-top: 50px;
 }
 .main-container {
     width: 100%;
