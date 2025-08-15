@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ======== GAME STATE VARIABLES ========
     // =================================================================
     let currentRoomId = null;
-    let joiningRoomData = null; 
+    let joiningRoomData = null; // Stores {id, name} of the room being joined
     let currentPlayerId = null;
     let opponentPlayerId = null;
     let ourNumber = null;
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let roomListener = null;
     let roomListListener = null;
     let currentGuess = [];
-    let guessHistory = []; // *** NEW: To store previous guesses locally ***
+    let guessHistory = []; // To check for duplicate guesses
     const GUESS_LENGTH = 4;
 
     // =================================================================
@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
         roomCodeText: document.getElementById('room-code-text'),
         player1Slot: document.getElementById('player1-slot'),
         player2Slot: document.getElementById('player2-slot'),
+        p1AvatarInitial: document.getElementById('p1-avatar-initial'),
+        p2AvatarInitial: document.getElementById('p2-avatar-initial'),
         waitingMessage: document.getElementById('waiting-message'),
         startGameBtn: document.getElementById('start-game-btn'),
 
@@ -231,11 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentRoomId = roomId;
         if (roomListListener) db.ref('rooms').off('value', roomListListener);
         
-        db.ref(`rooms/${roomId}/player2`).update({ connected: true, name: joinerName }).then(() => {
-            showToast(`เข้าร่วมห้องสำเร็จ!`);
-            listenToRoomUpdates();
-            showScreen('waiting');
-        });
+        db.ref(`rooms/${roomId}/player2`).update({ connected: true, name: joinerName });
     }
 
     // =================================================================
@@ -285,24 +283,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateWaitingRoomUI(roomData) {
         ui.roomCodeText.textContent = roomData.roomName;
-        ui.player1Slot.querySelector('.player-name').textContent = `${roomData.player1.name} (เจ้าของห้อง)`;
+
+        // Player 1
+        const p1Name = roomData.player1.name;
+        ui.player1Slot.querySelector('.player-name').textContent = `${p1Name} (เจ้าของห้อง)`;
+        ui.p1AvatarInitial.textContent = p1Name.charAt(0).toUpperCase() || '?';
+
+        // Player 2
         const p2Slot = ui.player2Slot;
+        const p2Name = roomData.player2.name;
         if (roomData.player2.connected) {
-            p2Slot.querySelector('.player-name').textContent = roomData.player2.name;
+            p2Slot.querySelector('.player-name').textContent = p2Name;
             p2Slot.querySelector('.player-status').textContent = 'เชื่อมต่อแล้ว';
             p2Slot.querySelector('.player-status').className = 'player-status connected';
+            ui.p2AvatarInitial.textContent = p2Name.charAt(0).toUpperCase() || '?';
+            ui.p2AvatarInitial.style.backgroundColor = 'var(--success-color)';
+
             if (currentPlayerId === 'player1') {
                 ui.startGameBtn.disabled = false;
                 ui.waitingMessage.textContent = 'เพื่อนของคุณพร้อมแล้ว กดเริ่มเกมได้เลย!';
             } else {
                 ui.waitingMessage.textContent = 'รอเจ้าของห้องเริ่มเกม...';
             }
+        } else {
+            p2Slot.querySelector('.player-name').textContent = 'ผู้เล่น 2';
+            p2Slot.querySelector('.player-status').textContent = 'กำลังรอ...';
+            p2Slot.querySelector('.player-status').className = 'player-status waiting';
+            ui.p2AvatarInitial.textContent = '?';
+            ui.p2AvatarInitial.style.backgroundColor = '#a0aec0';
         }
     }
 
     function updatePlayingUI(roomData) {
         opponentNumber = roomData[opponentPlayerId].number;
-        updateTurnIndicator(roomData.turn);
+        updateTurnIndicator(roomData.turn, roomData[opponentPlayerId].name);
         updateHistoryLog(roomData[currentPlayerId].guesses);
         updateChances(roomData[currentPlayerId].finalChances);
     }
@@ -336,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         createNumberPad();
         currentGuess = [];
-        guessHistory = []; // Reset guess history for new game
+        guessHistory = [];
         ui.historyLog.innerHTML = '';
         
         db.ref(`rooms/${currentRoomId}/${currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
@@ -358,7 +372,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const cell = document.createElement('div');
             cell.className = 'number-cell';
             cell.textContent = val;
-            cell.dataset.value = val;
             if (val === 'ลบ' || val === 'ทาย') {
                 cell.classList.add('special');
             }
@@ -401,10 +414,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function submitGuess() {
         const guessString = currentGuess.join('');
 
-        // *** NEW: Check if the guess has been made before ***
         if (guessHistory.includes(guessString)) {
             showToast("คุณเคยทายเลขนี้ไปแล้ว!");
-            return; // Stop the function here
+            return;
         }
 
         const clues = calculateClues(currentGuess, opponentNumber.split(''));
@@ -425,39 +437,35 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateClues(guess, answer) {
         let strikes = 0;
         let balls = 0;
-        let checkedAnswerIndexes = []; 
-        let checkedGuessIndexes = []; 
+        let tempAnswer = [...answer];
+        let tempGuess = [...guess];
 
-        guess.forEach((digit, index) => {
-            if (digit === answer[index]) {
+        // First pass for Strikes
+        for (let i = tempGuess.length - 1; i >= 0; i--) {
+            if (tempGuess[i] === tempAnswer[i]) {
                 strikes++;
-                checkedAnswerIndexes.push(index);
-                checkedGuessIndexes.push(index);
+                tempGuess.splice(i, 1);
+                tempAnswer.splice(i, 1);
             }
-        });
+        }
 
-        guess.forEach((digit, index) => {
-            if (!checkedGuessIndexes.includes(index)) {
-                const ballIndex = answer.findIndex((ansDigit, ansIndex) => 
-                    !checkedAnswerIndexes.includes(ansIndex) && ansDigit === digit
-                );
-
-                if (ballIndex !== -1) {
-                    balls++;
-                    checkedAnswerIndexes.push(ballIndex);
-                }
+        // Second pass for Balls
+        for (let i = 0; i < tempGuess.length; i++) {
+            const foundIndex = tempAnswer.indexOf(tempGuess[i]);
+            if (foundIndex !== -1) {
+                balls++;
+                tempAnswer.splice(foundIndex, 1);
             }
-        });
-        
+        }
         return { strikes, balls };
     }
 
     function updateHistoryLog(guesses) {
         ui.historyLog.innerHTML = '';
-        guessHistory = []; // *** NEW: Reset and rebuild the history array ***
+        guessHistory = []; // Reset and rebuild history
         if (!guesses) return;
         Object.values(guesses).forEach(item => {
-            guessHistory.push(item.guess); // *** NEW: Add guess to the local array ***
+            guessHistory.push(item.guess); // Add to history for duplicate check
             const historyItem = document.createElement('div');
             historyItem.className = 'history-item';
             
@@ -478,6 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             ui.historyLog.appendChild(historyItem);
         });
+        ui.historyLog.scrollTop = ui.historyLog.scrollHeight; // Auto-scroll to bottom
     }
 
     function submitFinalAnswer() {
@@ -526,14 +535,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function updateTurnIndicator(currentTurn) {
+    function updateTurnIndicator(currentTurn, opponentName) {
         const isMyTurn = currentTurn === currentPlayerId;
-        db.ref(`rooms/${currentRoomId}/${opponentPlayerId}/name`).get().then(snapshot => {
-            const opponentName = snapshot.val() || 'เพื่อน';
-            ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
-            ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
-            ui.turnText.textContent = isMyTurn ? "ตาของคุณ" : `ตาของ ${opponentName}`;
-        });
+        ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
+        ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
+        ui.turnText.textContent = isMyTurn ? "ตาของคุณ" : `ตาของ ${opponentName}`;
     }
 
     // =================================================================
