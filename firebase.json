@@ -1,1 +1,7 @@
+{
+  "hosting": {
+    "target": "Taija",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
 
