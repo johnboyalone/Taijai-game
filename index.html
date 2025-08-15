@@ -1,380 +1,190 @@
-/* ======== GLOBAL STYLES & VARIABLES ======== */
-:root {
-    --bg-color: #f0f8ff;
-    --card-bg: #ffffff;
-    --primary-color: #89cff0;
-    --secondary-color: #f8c8dc;
-    --accent-color: #ffc107;
-    --danger-color: #ff6b6b;
-    --success-color: #4ade80;
-    --text-color: #5d5d5d;
-    --border-color: #e0e7ef;
-    --shadow-color: rgba(137, 207, 240, 0.2);
-    --font-family: 'Mitr', sans-serif;
-}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เกม ทายเลขทายใจ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: var(--bg-color);
-}
+    <!-- Screen 1: Splash Screen -->
+    <div id="splash-screen" class="game-screen show">
+        <div class="splash-content">
+            <h1 class="splash-title">เกม<br>ทายเลขทายใจ</h1>
+            <div class="instructions">
+                <h2>วิธีการเล่น (4 คน)</h2>
+                <ol>
+                    <li>ผู้เล่นทุกคนตั้งเลขลับ 4 หลักของตัวเอง</li>
+                    <li>ในแต่ละตา ผู้เล่นจะเลือก "เป้าหมาย" ที่จะทายเลข</li>
+                    <li>ทายเลข 4 หลักของเป้าหมาย เพื่อเก็บข้อมูล (Strike/Ball)</li>
+                    <li>เมื่อมั่นใจ สามารถใช้ "โอกาสตอบสุดท้าย" (มี 3 ครั้ง) เพื่อกำจัดเป้าหมาย</li>
+                    <li>ใครอยู่รอดเป็นคนสุดท้าย เป็นผู้ชนะ!</li>
+                </ol>
+                <p class="start-prompt">(แตะที่หน้าจอเพื่อไปต่อ)</p>
+            </div>
+        </div>
+    </div>
 
-body {
-    font-family: var(--font-family);
-    color: var(--text-color);
-    -webkit-tap-highlight-color: transparent;
-}
+    <!-- Screen 2: Lobby Screen -->
+    <div id="lobby-screen" class="game-screen">
+        <div class="lobby-container">
+            <div class="lobby-box">
+                <h2 class="lobby-title">สร้างห้องใหม่</h2>
+                <p class="lobby-description">สร้างห้องและชวนเพื่อนของคุณมาเล่น</p>
+                <button id="go-to-create-btn" class="lobby-button">สร้างห้อง</button>
+            </div>
+            <div class="lobby-box">
+                <h2 class="lobby-title">เข้าร่วมห้อง</h2>
+                <p class="lobby-description">ดูรายการห้องทั้งหมดและเข้าร่วม</p>
+                <button id="go-to-join-btn" class="lobby-button">เข้าร่วมห้อง</button>
+            </div>
+        </div>
+    </div>
 
-/* ======== SCREEN MANAGEMENT ======== */
-.game-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-    z-index: 100;
-    overflow-y: auto;
-}
-.game-screen.show {
-    opacity: 1;
-    visibility: visible;
-    z-index: 101;
-}
+    <!-- Screen 3: Create Room Setup Screen -->
+    <div id="create-room-screen" class="game-screen">
+        <div class="lobby-container">
+            <div class="lobby-box">
+                <h2 class="lobby-title">ตั้งค่าห้องของคุณ</h2>
+                <input type="text" id="host-name-input" class="lobby-input" placeholder="ชื่อของคุณ" maxlength="12">
+                <input type="text" id="new-room-name-input" class="lobby-input" placeholder="ชื่อห้อง (เช่น ห้องของตู่)" maxlength="20">
+                <input type="password" id="new-room-password-input" class="lobby-input" placeholder="ตั้งรหัสผ่าน (4 ตัวเลข)" maxlength="4" inputmode="numeric">
+                <button id="confirm-create-btn" class="lobby-button">ยืนยันและสร้างห้อง</button>
+            </div>
+        </div>
+    </div>
 
-/* ======== SPLASH, LOBBY, CREATE & WAITING SCREENS ======== */
-#splash-screen, #lobby-screen, #create-room-screen, #joiner-setup-screen, #waiting-room-screen, #game-over-screen {
-    background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
-    justify-content: flex-start;
-    padding-top: 5vh;
-}
+    <!-- Screen 4: Room List Screen -->
+    <div id="room-list-screen" class="game-screen">
+        <div class="room-list-container">
+            <h2 class="room-list-title">รายการห้องที่ว่างอยู่</h2>
+            <div id="room-list-content">
+                <p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p>
+            </div>
+        </div>
+    </div>
 
-#splash-screen, #waiting-room-screen, #game-over-screen {
-    justify-content: center;
-    padding-top: 0;
-}
+    <!-- Screen 4.5: Joiner Setup Screen -->
+    <div id="joiner-setup-screen" class="game-screen">
+        <div class="lobby-container">
+            <div class="lobby-box">
+                <h2 class="lobby-title">ตั้งชื่อของคุณ</h2>
+                <p class="lobby-description">คุณกำลังจะเข้าร่วมห้อง <strong id="joiner-room-name-display"></strong></p>
+                <input type="text" id="joiner-name-input" class="lobby-input" placeholder="กรอกชื่อของคุณที่นี่" maxlength="12">
+                <button id="confirm-join-btn" class="lobby-button">ยืนยันและเข้าร่วม</button>
+            </div>
+        </div>
+    </div>
 
-.splash-content, .lobby-box, .waiting-room-container, .game-over-container {
-    background-color: var(--card-bg);
-    border-radius: 24px;
-    padding: clamp(20px, 5vw, 30px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-    box-sizing: border-box;
-}
-.lobby-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    max-width: 420px;
-}
-.lobby-title { font-size: 1.5rem; margin: 0 0 10px; }
-.lobby-description { margin: 0 0 20px; color: #718096; }
-.lobby-input {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    font-family: var(--font-family);
-    font-size: 1.1rem;
-    text-align: center;
-    box-sizing: border-box;
-    margin-bottom: 15px;
-}
-.lobby-button {
-    width: 100%;
-    padding: 14px;
-    font-family: var(--font-family);
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: white;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.lobby-button.secondary {
-    background-color: #a0aec0;
-}
-.lobby-button:disabled {
-    background-color: #cbd5e0;
-    cursor: not-allowed;
-}
+    <!-- Screen 5: Waiting Room Screen -->
+    <div id="waiting-room-screen" class="game-screen">
+        <div class="waiting-room-container">
+            <h2 class="waiting-room-title">ห้องรอเล่น</h2>
+            <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
+            <div class="player-list">
+                <div class="player-slot" id="player1-slot">
+                    <div class="player-icon">?</div>
+                    <span class="player-name">ผู้เล่น 1 (เจ้าของห้อง)</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+                <div class="player-slot" id="player2-slot">
+                    <div class="player-icon">?</div>
+                    <span class="player-name">ผู้เล่น 2</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+                <div class="player-slot" id="player3-slot">
+                    <div class="player-icon">?</div>
+                    <span class="player-name">ผู้เล่น 3</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+                <div class="player-slot" id="player4-slot">
+                    <div class="player-icon">?</div>
+                    <span class="player-name">ผู้เล่น 4</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+            </div>
+            <p id="waiting-message" class="waiting-message">แชร์ชื่อห้องและรหัสผ่านให้เพื่อนของคุณ!</p>
+            <button id="start-game-btn" class="lobby-button" disabled>เริ่มเกม</button>
+        </div>
+    </div>
 
-/* Splash Screen Specifics */
-.splash-title { font-size: 2.5rem; font-weight: 600; margin-bottom: 20px; }
-.instructions { text-align: left; padding: 0 15px; }
-.instructions h2 { text-align: center; }
-.instructions ol { padding-left: 25px; }
-.start-prompt { text-align: center; margin-top: 20px; color: #a0aec0; }
+    <!-- Screen 6: Main Game Screen -->
+    <div id="main-game-screen" class="game-screen">
+        <div id="turn-indicator" class="turn-indicator">
+            <span id="turn-text">กำลังรอ...</span>
+        </div>
+        <div class="main-container">
+            <div class="section">
+                <h2 class="section-title">⭐ เลขของเรา</h2>
+                <div id="our-number-display" class="input-container"></div>
+            </div>
+            <div class="section">
+                <h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2>
+                <div id="player-summary-grid" class="player-summary-grid"></div>
+            </div>
+            <div class="section">
+                <h2 class="section-title">📜 ประวัติการทาย <span id="history-target-name"></span></h2>
+                <div id="history-log" class="history-log"></div>
+            </div>
+            <div class="section guess-controls">
+                <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
+                <div id="guess-number-container" class="input-container"></div>
+                <div id="number-pad-container" class="number-grid"></div>
+            </div>
+            <div class="final-answer-section">
+                <div class="final-answer-chances">
+                    โอกาสตอบ: 
+                    <span id="chance-1" class="chance-dot"></span>
+                    <span id="chance-2" class="chance-dot"></span>
+                    <span id="chance-3" class="chance-dot"></span>
+                </div>
+                <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
+            </div>
+        </div>
+        <div id="spectator-overlay" class="spectator-overlay">
+            <p id="spectator-message"></p>
+        </div>
+    </div>
 
-/* Waiting Room Specifics */
-.waiting-room-title { margin-bottom: 15px; }
-.room-code-display { background-color: #edf2f7; padding: 10px; border-radius: 12px; margin-bottom: 20px; }
-.player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
-.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
-.player-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #e2e8f0;
-    color: #718096;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: 500;
-    flex-shrink: 0;
-}
-.player-name { flex-grow: 1; text-align: left; }
-.player-status { font-size: 0.9rem; padding: 4px 8px; border-radius: 8px; flex-shrink: 0; }
-.player-status.waiting { background-color: #fed7d7; color: #c53030; }
-.player-status.connected { background-color: #c6f6d5; color: #2f855a; }
-.waiting-message { color: #718096; }
+    <!-- Screen 7: Game Over Screen -->
+    <div id="game-over-screen" class="game-screen">
+        <div class="game-over-container">
+            <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
+            <h2 id="winner-name" class="winner-name"></h2>
+            <p id="game-over-message" class="game-over-message">คุณทายเลขของเพื่อนได้สำเร็จ!</p>
+            <div id="game-over-numbers-container" class="game-over-numbers">
+                <!-- Numbers will be added here by JS -->
+            </div>
+            <div class="game-over-buttons">
+                <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
+                <button id="back-to-lobby-btn" class="lobby-button secondary">กลับหน้าหลัก</button>
+            </div>
+        </div>
+    </div>
 
-/* ======== ROOM LIST SCREEN ======== */
-#room-list-screen { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
-.room-list-container { width: 100%; max-width: 500px; background-color: var(--card-bg); border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
-.room-list-title { text-align: center; margin-top: 0; }
-#room-list-content { max-height: 60vh; overflow-y: auto; }
-.room-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; }
-.room-item:hover { background-color: #f7fafc; }
-.room-name { font-weight: 500; }
-.host-name { font-size: 0.9rem; color: #718096; }
-.room-status { font-weight: 500; color: var(--success-color); }
-.no-rooms-message { text-align: center; padding: 40px 20px; color: #a0aec0; }
+    <!-- Modals and Toasts -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">กรอกรหัสผ่านสำหรับห้อง</h3>
+            <p id="password-modal-room-name"></p>
+            <input type="password" id="password-modal-input" class="lobby-input" placeholder="รหัสผ่าน 4 ตัวเลข" maxlength="4" inputmode="numeric">
+            <button id="password-modal-submit-btn" class="lobby-button">ยืนยัน</button>
+        </div>
+    </div>
+    <div id="toast" class="toast-notification"></div>
+    <div id="action-toast" class="action-toast">
+        <p id="action-toast-text"></p>
+    </div>
 
-/* ======== MAIN GAME SCREEN ======== */
-#main-game-screen {
-    background-color: #e9f7ff;
-    padding-top: 50px; /* Space for turn indicator */
-}
-.main-container {
-    width: 100%;
-    max-width: 420px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.section {
-    background-color: var(--card-bg);
-    border-radius: 24px;
-    padding: 15px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-}
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin: 0 0 15px;
-    text-align: center;
-    color: #a0aec0;
-}
-.input-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-.number-input {
-    width: clamp(40px, 12vw, 50px);
-    height: clamp(50px, 15vw, 60px);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: clamp(1.5rem, 6vw, 2rem);
-    font-weight: 500;
-}
-#our-number-display .number-input { background-color: #e2e8f0; }
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-/* Player Summary Grid */
-.player-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-}
-.player-summary-box {
-    padding: 10px;
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.player-summary-box.is-me {
-    background-color: #e0e7ef;
-    cursor: not-allowed;
-}
-.player-summary-box.selected {
-    border-color: var(--primary-color);
-    background-color: #e0f7ff;
-    transform: scale(1.05);
-}
-.player-summary-box.eliminated {
-    background-color: #f1f5f9;
-    color: #a0aec0;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-.player-summary-name { font-weight: 500; }
-.player-summary-status { font-size: 0.9rem; }
+    <script src="script.js"></script>
 
-/* History Log */
-.history-log {
-    max-height: 15vh;
-    overflow-y: auto;
-    padding: 0 10px;
-}
-.history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
-.history-guess { font-family: 'Courier New', Courier, monospace; font-size: 1.5rem; letter-spacing: 4px; }
-.history-clues { display: flex; gap: 5px; }
-.clue-box { padding: 5px 10px; border-radius: 8px; color: white; font-weight: 500; }
-.clue-strike { background-color: var(--success-color); }
-.clue-ball { background-color: var(--accent-color); }
-
-/* Number Pad */
-.number-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-top: 15px;
-}
-.number-cell {
-    aspect-ratio: 1.2 / 1;
-    border-radius: 16px;
-    background-color: #f8fafc;
-    border: 1px solid var(--border-color);
-    font-size: clamp(1.2rem, 5vw, 1.5rem);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
-}
-.number-cell.special { background-color: #fee2e2; color: #ef4444; }
-
-/* Final Answer Section */
-.final-answer-section {
-    margin-top: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fffbeb;
-    padding: 10px 20px;
-    border-radius: 20px;
-}
-.final-answer-chances { display: flex; align-items: center; gap: 8px; }
-.chance-dot { width: 12px; height: 12px; border-radius: 50%; background-color: var(--success-color); transition: background-color 0.3s; }
-.chance-dot.used { background-color: #e2e8f0; }
-.final-answer-button { padding: 10px 20px; background-color: var(--danger-color); color: white; border: none; border-radius: 12px; font-family: var(--font-family); font-size: 1rem; }
-
-/* Turn Indicator */
-#turn-indicator {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-    color: white;
-    font-weight: 500;
-    transition: background-color 0.5s;
-    z-index: 102;
-}
-#turn-indicator.my-turn { background-color: var(--success-color); }
-#turn-indicator.their-turn { background-color: #a0aec0; }
-
-/* Spectator Overlay */
-.spectator-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 103;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s;
-}
-.spectator-overlay.show {
-    opacity: 1;
-    visibility: visible;
-}
-#spectator-message {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: var(--text-color);
-    padding: 20px;
-    background-color: var(--card-bg);
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-
-/* ======== GAME OVER SCREEN ======== */
-#game-over-screen { background: linear-gradient(135deg, #89f7fe, #66a6ff); transition: background 2s ease; }
-#game-over-screen.win { background: linear-gradient(135deg, #a8e063, #56ab2f); }
-#game-over-screen.lose { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
-.game-over-container { background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
-.game-over-title { font-size: clamp(2.5rem, 10vw, 3.5rem); color: white; margin: 0 0 10px; text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); font-weight: 600; }
-.winner-name { font-size: 1.5rem; color: rgba(255, 255, 255, 0.95); margin: -10px 0 20px 0; font-weight: 500; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
-.game-over-message { font-size: 1.1rem; color: rgba(255,255,255,0.9); margin: 0 0 25px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
-.game-over-numbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-    width: 100%;
-}
-.final-number-box { text-align: center; color: white; background-color: rgba(0,0,0,0.15); padding: 10px; border-radius: 16px; }
-.final-number-box-title { font-size: 0.9rem; opacity: 0.8; }
-.final-number-display { font-family: 'Courier New', Courier, monospace; font-size: 1.8rem; letter-spacing: 4px; margin-top: 5px; }
-.game-over-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; }
-
-/* ======== MODALS & TOASTS ======== */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; z-index: 200; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
-.modal-overlay.show { opacity: 1; visibility: visible; }
-.modal-content { background-color: var(--card-bg); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s; text-align: center; }
-.modal-overlay.show .modal-content { transform: scale(1); }
-.modal-title { margin-top: 0; }
-.toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--danger-color); color: white; padding: 12px 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1001; font-size: 1rem; opacity: 0; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-.toast-notification.show { opacity: 1; bottom: 30px; }
-
-.action-toast {
-    position: fixed;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-100px);
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    z-index: 102;
-    font-size: 1rem;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.4s ease;
-}
-.action-toast.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(0);
-}
+</body>
+</html>
