@@ -18,7 +18,7 @@
             <div class="instructions">
                 <h2>วิธีการเล่น (ใหม่)</h2>
                 <ol>
-                    <li>ทายเลข 4 หลักของเพื่อน (เลขซ้ำได้)</li>
+                    <li>ทายเลข 4 หลักของเพื่อนเพื่อเก็บข้อมูล</li>
                     <li>เกมจะบอกใบ้ว่าทาย **"ถูกเลข ถูกตำแหน่ง" (Strike)** หรือ **"ถูกเลข ผิดตำแหน่ง" (Ball)** กี่ตัว</li>
                     <li>เมื่อมั่นใจในคำตอบ ให้กด "ส่งคำตอบสุดท้าย" (มี 3 โอกาส)</li>
                     <li>ใครตอบถูกก่อนเป็นผู้ชนะ!</li>
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <!-- Screen 3: Create Room Setup Screen (ลบส่วนรูปภาพออกแล้ว) -->
+    <!-- Screen 3: Create Room Setup Screen -->
     <div id="create-room-screen" class="game-screen">
         <div class="lobby-container">
             <div class="lobby-box">
@@ -67,7 +67,7 @@
         </div>
     </div>
 
-    <!-- Screen 4.5: Joiner Setup Screen (ลบส่วนรูปภาพออกแล้ว) -->
+    <!-- Screen 4.5: Joiner Setup Screen -->
     <div id="joiner-setup-screen" class="game-screen">
         <div class="lobby-container">
             <div class="lobby-box">
@@ -79,23 +79,44 @@
         </div>
     </div>
 
-    <!-- Screen 5: Waiting Room Screen (แก้ไขเป็นชื่อย่อ) -->
+    <!-- Screen 5: Waiting Room Screen (***แก้ไขแล้ว***) -->
     <div id="waiting-room-screen" class="game-screen">
         <div class="waiting-room-container">
             <h2 class="waiting-room-title">ห้องรอเล่น</h2>
             <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
             <div class="player-list">
+                <!-- Player 1 (เหมือนเดิม) -->
                 <div class="player-slot" id="player1-slot">
-                    <div class="player-avatar-initial" id="p1-avatar-initial">?</div>
+                    <div class="player-avatar-initial">A</div>
                     <div class="player-info">
                         <span class="player-name">ผู้เล่น 1 (เจ้าของห้อง)</span>
                         <span class="player-status connected">เชื่อมต่อแล้ว</span>
                     </div>
                 </div>
+    
+                <!-- Player 2 (เหมือนเดิม) -->
                 <div class="player-slot" id="player2-slot">
-                    <div class="player-avatar-initial" id="p2-avatar-initial">?</div>
+                    <div class="player-avatar-initial">?</div>
                     <div class="player-info">
                         <span class="player-name">ผู้เล่น 2</span>
+                        <span class="player-status waiting">กำลังรอ...</span>
+                    </div>
+                </div>
+    
+                <!-- Player 3 (ที่เพิ่มใหม่) -->
+                <div class="player-slot" id="player3-slot">
+                    <div class="player-avatar-initial">?</div>
+                    <div class="player-info">
+                        <span class="player-name">ผู้เล่น 3</span>
+                        <span class="player-status waiting">กำลังรอ...</span>
+                    </div>
+                </div>
+    
+                <!-- Player 4 (ที่เพิ่มใหม่) -->
+                <div class="player-slot" id="player4-slot">
+                    <div class="player-avatar-initial">?</div>
+                    <div class="player-info">
+                        <span class="player-name">ผู้เล่น 4</span>
                         <span class="player-status waiting">กำลังรอ...</span>
                     </div>
                 </div>
@@ -132,7 +153,7 @@
             </div>
             <div class="final-answer-section">
                 <div class="final-answer-chances">
-                    โอกาสตอบ:
+                    โอกาสตอบ: 
                     <span id="chance-1" class="chance-dot"></span>
                     <span id="chance-2" class="chance-dot"></span>
                     <span id="chance-3" class="chance-dot"></span>
