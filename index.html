@@ -18,9 +18,10 @@
             <div class="instructions">
                 <h2>วิธีการเล่น (ใหม่)</h2>
                 <ol>
-                    <li>ทายเลข 4 หลักของเพื่อนเพื่อเก็บข้อมูล</li>
+                    <li>ผู้เล่นทุกคนตั้งเลขลับ 4 หลักของตัวเอง (เลขซ้ำได้)</li>
+                    <li>ในแต่ละตา ผู้เล่นจะเลือกทายเลขของผู้เล่นคนอื่น 1 คน</li>
                     <li>เกมจะบอกใบ้ว่าทาย **"ถูกเลข ถูกตำแหน่ง" (Strike)** หรือ **"ถูกเลข ผิดตำแหน่ง" (Ball)** กี่ตัว</li>
-                    <li>เมื่อมั่นใจในคำตอบ ให้กด "ส่งคำตอบสุดท้าย" (มี 3 โอกาส)</li>
+                    <li>เมื่อมั่นใจในคำตอบของใครคนใดคนหนึ่ง ให้กด "ส่งคำตอบสุดท้าย"</li>
                     <li>ใครตอบถูกก่อนเป็นผู้ชนะ!</li>
                 </ol>
                 <p class="start-prompt">(แตะที่หน้าจอเพื่อไปต่อ)</p>
@@ -79,46 +80,35 @@
         </div>
     </div>
 
-    <!-- Screen 5: Waiting Room Screen (***แก้ไขแล้ว***) -->
+    <!-- Screen 5: Waiting Room Screen -->
     <div id="waiting-room-screen" class="game-screen">
         <div class="waiting-room-container">
             <h2 class="waiting-room-title">ห้องรอเล่น</h2>
             <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
             <div class="player-list">
-                <!-- Player 1 (เหมือนเดิม) -->
+                <!-- Player 1 Slot -->
                 <div class="player-slot" id="player1-slot">
-                    <div class="player-avatar-initial">A</div>
-                    <div class="player-info">
-                        <span class="player-name">ผู้เล่น 1 (เจ้าของห้อง)</span>
-                        <span class="player-status connected">เชื่อมต่อแล้ว</span>
-                    </div>
+                    <div class="player-avatar-initial">?</div>
+                    <span class="player-name">ผู้เล่น 1</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
                 </div>
-    
-                <!-- Player 2 (เหมือนเดิม) -->
+                <!-- Player 2 Slot -->
                 <div class="player-slot" id="player2-slot">
                     <div class="player-avatar-initial">?</div>
-                    <div class="player-info">
-                        <span class="player-name">ผู้เล่น 2</span>
-                        <span class="player-status waiting">กำลังรอ...</span>
-                    </div>
+                    <span class="player-name">ผู้เล่น 2</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
                 </div>
-    
-                <!-- Player 3 (ที่เพิ่มใหม่) -->
+                <!-- Player 3 Slot -->
                 <div class="player-slot" id="player3-slot">
                     <div class="player-avatar-initial">?</div>
-                    <div class="player-info">
-                        <span class="player-name">ผู้เล่น 3</span>
-                        <span class="player-status waiting">กำลังรอ...</span>
-                    </div>
+                    <span class="player-name">ผู้เล่น 3</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
                 </div>
-    
-                <!-- Player 4 (ที่เพิ่มใหม่) -->
+                <!-- Player 4 Slot -->
                 <div class="player-slot" id="player4-slot">
                     <div class="player-avatar-initial">?</div>
-                    <div class="player-info">
-                        <span class="player-name">ผู้เล่น 4</span>
-                        <span class="player-status waiting">กำลังรอ...</span>
-                    </div>
+                    <span class="player-name">ผู้เล่น 4</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
                 </div>
             </div>
             <p id="waiting-message" class="waiting-message">แชร์ชื่อห้องและรหัสผ่านให้เพื่อนของคุณ!</p>
@@ -137,20 +127,27 @@
                     <div class="header-title">⭐ เลขของเรา</div>
                     <div id="our-number-display" class="input-container"></div>
                 </div>
-                <div class="header-number-box">
-                    <div class="header-title">💖 เลขของเขา</div>
-                    <div id="their-number-display" class="input-container"></div>
+            </div>
+            
+            <!-- *** แก้ไขแล้ว: ส่วนแสดงผู้เล่นอื่น *** -->
+            <div class="section">
+                <h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2>
+                <div id="player-summary-grid" class="player-summary-grid">
+                    <!-- JavaScript จะสร้างข้อมูลผู้เล่นที่นี่ -->
                 </div>
             </div>
+
             <div class="section">
-                <h2 class="section-title">ประวัติการทาย</h2>
+                <h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2>
                 <div id="history-log" class="history-log"></div>
             </div>
+
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
                 <div id="guess-number-container" class="input-container"></div>
                 <div id="number-pad-container" class="number-grid"></div>
             </div>
+
             <div class="final-answer-section">
                 <div class="final-answer-chances">
                     โอกาสตอบ: 
@@ -169,15 +166,8 @@
             <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
             <h2 id="winner-name" class="winner-name"></h2>
             <p id="game-over-message" class="game-over-message">คุณทายเลขของเพื่อนได้สำเร็จ!</p>
-            <div class="game-over-numbers">
-                <div class="final-number-box">
-                    <div class="final-number-box-title">เลขของคุณ</div>
-                    <div id="final-our-number" class="final-number-display">1234</div>
-                </div>
-                <div class="final-number-box">
-                    <div class="final-number-box-title">เลขของเพื่อน</div>
-                    <div id="final-their-number" class="final-number-display">5678</div>
-                </div>
+            <div id="game-over-numbers-container" class="game-over-numbers">
+                <!-- JavaScript จะสร้างผลลัพธ์ที่นี่ -->
             </div>
             <div class="game-over-buttons">
                 <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
