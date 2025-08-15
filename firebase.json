@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "taijai",
+    "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
