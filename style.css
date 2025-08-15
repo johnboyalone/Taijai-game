@@ -24,7 +24,6 @@ html, body {
 body {
     font-family: var(--font-family);
     color: var(--text-color);
-    -webkit-tap-highlight-color: transparent;
 }
 
 /* ======== SCREEN MANAGEMENT ======== */
@@ -125,37 +124,13 @@ body {
 .waiting-room-title { margin-bottom: 15px; }
 .room-code-display { background-color: #edf2f7; padding: 10px; border-radius: 12px; margin-bottom: 20px; }
 .player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
-
-.player-slot {
-    display: flex;
-    align-items: center;
-    background-color: #f7fafc;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    gap: 15px;
-    overflow: hidden;
-    transition: max-height 0.4s ease, padding 0.4s ease, border 0.4s ease, margin 0.4s ease;
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-width: 0;
-    margin-bottom: 0;
-}
-
-.player-slot.active {
-    max-height: 100px;
-    padding-top: 12px;
-    padding-bottom: 12px;
-    border-width: 1px;
-}
-
-.player-icon {
+.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
+.player-avatar-initial {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     background-color: #e2e8f0;
-    color: #718096;
+    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -178,13 +153,14 @@ body {
 .room-item:hover { background-color: #f7fafc; }
 .room-name { font-weight: 500; }
 .host-name { font-size: 0.9rem; color: #718096; }
-.room-status { font-weight: 500; color: var(--success-color); }
+.room-status { font-weight: 500; color: var(--text-color); }
 .no-rooms-message { text-align: center; padding: 40px 20px; color: #a0aec0; }
 
 /* ======== MAIN GAME SCREEN ======== */
 #main-game-screen {
     background-color: #e9f7ff;
-    padding-top: 50px;
+    padding-top: 50px; /* Space for turn indicator */
+    position: relative;
 }
 .main-container {
     width: 100%;
@@ -205,15 +181,19 @@ body {
     margin: 0 0 15px;
     text-align: center;
     color: #a0aec0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 .input-container {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: clamp(5px, 2vw, 10px);
 }
 .number-input {
-    width: clamp(40px, 12vw, 50px);
-    height: clamp(50px, 15vw, 60px);
+    width: clamp(40px, 15vw, 50px);
+    height: clamp(50px, 18vw, 60px);
     border: 2px solid var(--border-color);
     border-radius: 16px;
     display: flex;
@@ -221,8 +201,10 @@ body {
     align-items: center;
     font-size: clamp(1.5rem, 6vw, 2rem);
     font-weight: 500;
+    box-sizing: border-box;
 }
 #our-number-display .number-input { background-color: #e2e8f0; }
+#guess-number-container .number-input { background-color: #f7fafc; }
 
 /* Player Summary Grid */
 .player-summary-grid {
@@ -230,31 +212,27 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
 }
-.player-summary-box {
-    padding: 10px;
+.player-summary-card {
     border: 2px solid var(--border-color);
     border-radius: 16px;
+    padding: 10px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s ease;
 }
-.player-summary-box.is-me {
-    background-color: #e0e7ef;
-    cursor: not-allowed;
-}
-.player-summary-box.selected {
+.player-summary-card.is-target {
     border-color: var(--primary-color);
     background-color: #e0f7ff;
     transform: scale(1.05);
 }
-.player-summary-box.eliminated {
+.player-summary-card.is-eliminated {
     background-color: #f1f5f9;
     color: #a0aec0;
     cursor: not-allowed;
     opacity: 0.6;
 }
-.player-summary-name { font-weight: 500; }
-.player-summary-status { font-size: 0.9rem; }
+.summary-card-name { font-weight: 500; }
+.summary-card-status { font-size: 0.9rem; }
 
 /* History Log */
 .history-log {
@@ -273,7 +251,7 @@ body {
 .number-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: clamp(8px, 2vw, 12px);
     margin-top: 15px;
 }
 .number-cell {
@@ -317,6 +295,7 @@ body {
     font-weight: 500;
     transition: background-color 0.5s;
     z-index: 102;
+    box-sizing: border-box;
 }
 #turn-indicator.my-turn { background-color: var(--success-color); }
 #turn-indicator.their-turn { background-color: #a0aec0; }
@@ -328,28 +307,25 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 103;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s;
+    transition: opacity 0.3s;
 }
 .spectator-overlay.show {
     opacity: 1;
     visibility: visible;
 }
-#spectator-message {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: var(--text-color);
+.spectator-message {
+    font-size: 1.5rem;
     padding: 20px;
-    background-color: var(--card-bg);
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
 }
 
 /* ======== GAME OVER SCREEN ======== */
@@ -360,13 +336,7 @@ body {
 .game-over-title { font-size: clamp(2.5rem, 10vw, 3.5rem); color: white; margin: 0 0 10px; text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); font-weight: 600; }
 .winner-name { font-size: 1.5rem; color: rgba(255, 255, 255, 0.95); margin: -10px 0 20px 0; font-weight: 500; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
 .game-over-message { font-size: 1.1rem; color: rgba(255,255,255,0.9); margin: 0 0 25px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
-.game-over-numbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-    width: 100%;
-}
+.game-over-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 30px; width: 100%; }
 .final-number-box { text-align: center; color: white; background-color: rgba(0,0,0,0.15); padding: 10px; border-radius: 16px; }
 .final-number-box-title { font-size: 0.9rem; opacity: 0.8; }
 .final-number-display { font-family: 'Courier New', Courier, monospace; font-size: 1.8rem; letter-spacing: 4px; margin-top: 5px; }
@@ -381,11 +351,12 @@ body {
 .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--danger-color); color: white; padding: 12px 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1001; font-size: 1rem; opacity: 0; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
 .toast-notification.show { opacity: 1; bottom: 30px; }
 
+/* Action Toast */
 .action-toast {
     position: fixed;
-    top: 60px;
+    top: 60px; /* Below turn indicator */
     left: 50%;
-    transform: translateX(-50%) translateY(-100px);
+    transform: translateX(-50%) translateY(-20px);
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
     padding: 10px 20px;
