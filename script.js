@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateWaitingRoomUI(roomData);
                     break;
                 case 'setup':
-                    if (!screens.game.classList.contains('show')) {
+                    if (!screens.game.classList.contains('show') || screens.gameOver.classList.contains('show')) {
                         initializeGameUI(roomData);
                     }
                     const allPlayersSetNumber = connectedPlayers.every(p => p.numberSet);
@@ -461,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         createNumberPad();
         currentGuess = [];
+        updateGuessDisplay();
         
         const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId && roomData.players[id].status === 'playing');
         currentTargetId = firstTarget;
@@ -695,8 +696,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
                 roomData.turn = activePlayers[nextTurnIndex];
                 
-                if (currentTargetId === roomData.turn) {
-                    currentTargetId = activePlayers.find(id => id !== currentPlayerId && id !== currentTargetId) || null;
+                if (targetPlayer.status === 'eliminated' && currentTargetId === roomData.turn) {
+                    // This logic is complex, we'll let the user re-select for now.
                 }
             }
             return roomData;
@@ -780,12 +781,3 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        db.ref().update(updates);
-    }
-
-    // =================================================================
-    // ======== INITIALIZATION ========
-    // =================================================================
-    setupInitialListeners();
-    showScreen('splash');
-});
