@@ -233,7 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
         currentRoomId = roomId;
         if (roomListListener) db.ref('rooms').off('value', roomListListener);
         
-        db.ref(`rooms/${roomId}/player2`).update({ connected: true, name: joinerName });
+        db.ref(`rooms/${roomId}/player2`).update({ connected: true, name: joinerName }).then(() => {
+            showToast(`เข้าร่วมห้องสำเร็จ!`);
+            listenToRoomUpdates();
+            showScreen('waiting');
+        });
     }
 
     // =================================================================
@@ -258,6 +262,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             switch(roomData.gameState) {
                 case 'waiting':
+                    if (!screens.waiting.classList.contains('show')) {
+                        showScreen('waiting');
+                    }
                     updateWaitingRoomUI(roomData);
                     break;
                 case 'setup':
