@@ -24,7 +24,6 @@ html, body {
 body {
     font-family: var(--font-family);
     color: var(--text-color);
-    -webkit-text-size-adjust: 100%; /* ป้องกันการซูมอัตโนมัติบน iOS */
 }
 
 /* ======== SCREEN MANAGEMENT ======== */
@@ -43,7 +42,7 @@ body {
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
     z-index: 100;
-    overflow-y: auto; /* อนุญาตให้เลื่อนได้ถ้าเนื้อหาล้น */
+    overflow-y: auto;
 }
 .game-screen.show {
     opacity: 1;
@@ -54,9 +53,13 @@ body {
 /* ======== SPLASH, LOBBY, CREATE & WAITING SCREENS ======== */
 #splash-screen, #lobby-screen, #create-room-screen, #joiner-setup-screen, #waiting-room-screen, #game-over-screen {
     background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
-    justify-content: center; /* จัดกลางเสมอ */
-    padding-top: 20px;
-    padding-bottom: 20px;
+    justify-content: flex-start;
+    padding-top: 5vh;
+}
+
+#splash-screen, #waiting-room-screen, #game-over-screen {
+    justify-content: center;
+    padding-top: 0;
 }
 
 .splash-content, .lobby-box, .waiting-room-container, .game-over-container {
@@ -121,7 +124,7 @@ body {
 .waiting-room-title { margin-bottom: 15px; }
 .room-code-display { background-color: #edf2f7; padding: 10px; border-radius: 12px; margin-bottom: 20px; }
 .player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
-.player-slot { display: flex; align-items: center; gap: 15px; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); }
+.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
 .player-avatar-initial {
     width: 40px;
     height: 40px;
@@ -131,11 +134,11 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 500;
     flex-shrink: 0;
 }
-.player-name { flex-grow: 1; }
+.player-name { flex-grow: 1; text-align: left; }
 .player-status { font-size: 0.9rem; padding: 4px 8px; border-radius: 8px; flex-shrink: 0; }
 .player-status.waiting { background-color: #fed7d7; color: #c53030; }
 .player-status.connected { background-color: #c6f6d5; color: #2f855a; }
@@ -150,13 +153,14 @@ body {
 .room-item:hover { background-color: #f7fafc; }
 .room-name { font-weight: 500; }
 .host-name { font-size: 0.9rem; color: #718096; }
-.room-status { font-weight: 500; color: var(--success-color); }
+.room-status { font-weight: 500; color: var(--text-color); }
 .no-rooms-message { text-align: center; padding: 40px 20px; color: #a0aec0; }
 
 /* ======== MAIN GAME SCREEN ======== */
 #main-game-screen {
     background-color: #e9f7ff;
-    padding-top: 60px; /* เพิ่ม padding ด้านบนเพื่อไม่ให้โดน Turn Indicator บัง */
+    padding-top: 50px; /* Space for turn indicator */
+    position: relative;
 }
 .main-container {
     width: 100%;
@@ -165,9 +169,28 @@ body {
     flex-direction: column;
     gap: 15px;
 }
-.section { background-color: var(--card-bg); border-radius: 24px; padding: 15px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
-.section-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 15px; text-align: center; color: #a0aec0; }
-.input-container { display: flex; justify-content: center; gap: clamp(5px, 2vw, 10px); }
+.section {
+    background-color: var(--card-bg);
+    border-radius: 24px;
+    padding: 15px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0 0 15px;
+    text-align: center;
+    color: #a0aec0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.input-container {
+    display: flex;
+    justify-content: center;
+    gap: clamp(5px, 2vw, 10px);
+}
 .number-input {
     width: clamp(40px, 15vw, 50px);
     height: clamp(50px, 18vw, 60px);
@@ -178,22 +201,61 @@ body {
     align-items: center;
     font-size: clamp(1.5rem, 6vw, 2rem);
     font-weight: 500;
+    box-sizing: border-box;
 }
-.game-header-numbers { display: flex; gap: 15px; }
-.header-number-box { flex: 1; background-color: var(--card-bg); border-radius: 20px; padding: 15px; text-align: center; }
-.header-title { font-size: 1rem; margin-bottom: 10px; color: #718096; }
 #our-number-display .number-input { background-color: #e2e8f0; }
 #guess-number-container .number-input { background-color: #f7fafc; }
-.history-log { max-height: 15vh; overflow-y: auto; }
-.history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+
+/* Player Summary Grid */
+.player-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+.player-summary-card {
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.player-summary-card.is-target {
+    border-color: var(--primary-color);
+    background-color: #e0f7ff;
+    transform: scale(1.05);
+}
+.player-summary-card.is-eliminated {
+    background-color: #f1f5f9;
+    color: #a0aec0;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.summary-card-name { font-weight: 500; }
+.summary-card-status { font-size: 0.9rem; }
+
+/* History Log */
+.history-log {
+    max-height: 15vh;
+    overflow-y: auto;
+    padding: 0 10px;
+}
+.history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
 .history-guess { font-family: 'Courier New', Courier, monospace; font-size: 1.5rem; letter-spacing: 4px; }
 .history-clues { display: flex; gap: 5px; }
 .clue-box { padding: 5px 10px; border-radius: 8px; color: white; font-weight: 500; }
 .clue-strike { background-color: var(--success-color); }
 .clue-ball { background-color: var(--accent-color); }
-.number-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+
+/* Number Pad */
+.number-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(8px, 2vw, 12px);
+    margin-top: 15px;
+}
 .number-cell {
-    aspect-ratio: 1.5 / 1;
+    aspect-ratio: 1.2 / 1;
     border-radius: 16px;
     background-color: #f8fafc;
     border: 1px solid var(--border-color);
@@ -205,65 +267,65 @@ body {
     user-select: none;
 }
 .number-cell.special { background-color: #fee2e2; color: #ef4444; }
-.final-answer-section { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; background-color: #fffbeb; padding: 10px 20px; border-radius: 20px; }
+
+/* Final Answer Section */
+.final-answer-section {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fffbeb;
+    padding: 10px 20px;
+    border-radius: 20px;
+}
 .final-answer-chances { display: flex; align-items: center; gap: 8px; }
 .chance-dot { width: 12px; height: 12px; border-radius: 50%; background-color: var(--success-color); transition: background-color 0.3s; }
 .chance-dot.used { background-color: #e2e8f0; }
 .final-answer-button { padding: 10px 20px; background-color: var(--danger-color); color: white; border: none; border-radius: 12px; font-family: var(--font-family); font-size: 1rem; }
-#turn-indicator { position: fixed; top: 0; left: 0; width: 100%; padding: 10px; text-align: center; color: white; font-weight: 500; transition: background-color 0.5s; z-index: 102; }
+
+/* Turn Indicator */
+#turn-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    font-weight: 500;
+    transition: background-color 0.5s;
+    z-index: 102;
+    box-sizing: border-box;
+}
 #turn-indicator.my-turn { background-color: var(--success-color); }
 #turn-indicator.their-turn { background-color: #a0aec0; }
 
-/* ======== MAIN GAME SCREEN - PLAYER SUMMARY ======== */
-.player-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-}
-.player-summary-card {
-    background-color: #f7fafc;
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-}
-.player-summary-card.is-target {
-    border-color: var(--primary-color);
-    background-color: #e0f7ff;
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px var(--shadow-color);
-}
-.player-summary-card.is-eliminated {
-    background-color: #e2e8f0;
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-.player-summary-card.is-eliminated::after {
-    content: 'แพ้แล้ว';
+/* Spectator Overlay */
+.spectator-overlay {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg);
-    color: var(--danger-color);
-    font-weight: 600;
-    font-size: 1.2rem;
-    border: 2px solid var(--danger-color);
-    padding: 2px 8px;
-    border-radius: 8px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 103;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s;
 }
-.summary-card-name {
-    font-weight: 500;
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.spectator-overlay.show {
+    opacity: 1;
+    visibility: visible;
 }
-.summary-card-status {
-    font-size: 0.8rem;
-    color: #a0aec0;
+.spectator-message {
+    font-size: 1.5rem;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
 }
 
 /* ======== GAME OVER SCREEN ======== */
@@ -274,10 +336,10 @@ body {
 .game-over-title { font-size: clamp(2.5rem, 10vw, 3.5rem); color: white; margin: 0 0 10px; text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); font-weight: 600; }
 .winner-name { font-size: 1.5rem; color: rgba(255, 255, 255, 0.95); margin: -10px 0 20px 0; font-weight: 500; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
 .game-over-message { font-size: 1.1rem; color: rgba(255,255,255,0.9); margin: 0 0 25px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
-.game-over-numbers { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; width: 100%; }
-.final-number-box { display: flex; justify-content: space-between; align-items: center; text-align: left; color: white; background-color: rgba(0,0,0,0.15); padding: 10px 15px; border-radius: 16px; }
+.game-over-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 30px; width: 100%; }
+.final-number-box { text-align: center; color: white; background-color: rgba(0,0,0,0.15); padding: 10px; border-radius: 16px; }
 .final-number-box-title { font-size: 0.9rem; opacity: 0.8; }
-.final-number-display { font-family: 'Courier New', Courier, monospace; font-size: 1.5rem; letter-spacing: 4px; }
+.final-number-display { font-family: 'Courier New', Courier, monospace; font-size: 1.8rem; letter-spacing: 4px; margin-top: 5px; }
 .game-over-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; }
 
 /* ======== MODALS & TOASTS ======== */
@@ -288,3 +350,26 @@ body {
 .modal-title { margin-top: 0; }
 .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--danger-color); color: white; padding: 12px 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1001; font-size: 1rem; opacity: 0; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
 .toast-notification.show { opacity: 1; bottom: 30px; }
+
+/* Action Toast */
+.action-toast {
+    position: fixed;
+    top: 60px; /* Below turn indicator */
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 102;
+    font-size: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+.action-toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
