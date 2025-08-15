@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "taijai"
+  },
+  "targets": {
+    "taijai": {
+      "hosting": {
+        "Taija": [
+          "taijai"
+        ]
+      }
+    }
   }
 }
