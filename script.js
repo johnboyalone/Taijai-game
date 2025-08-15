@@ -341,23 +341,25 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('เกมเริ่ม! นี่คือเลขของคุณ');
     }
 
+    // *** LOGIC CHANGE: ALLOW DUPLICATE NUMBERS ***
     function generateRandomNumber() {
-        let numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         let result = [];
         for (let i = 0; i < GUESS_LENGTH; i++) {
-            const randomIndex = Math.floor(Math.random() * numbers.length);
-            result.push(numbers.splice(randomIndex, 1)[0]);
+            // Just pick a random digit from 0-9 for each slot
+            result.push(Math.floor(Math.random() * 10).toString());
         }
         return result;
     }
 
     function createNumberPad() {
         ui.numberPadContainer.innerHTML = '';
+        // Re-ordered for a 3x3 grid + special buttons at the bottom
         const buttons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ลบ', '0', 'ทาย'];
         buttons.forEach(val => {
             const cell = document.createElement('div');
             cell.className = 'number-cell';
             cell.textContent = val;
+            cell.dataset.value = val; // Add data-value for CSS targeting
             if (val === 'ลบ' || val === 'ทาย') {
                 cell.classList.add('special');
             }
@@ -384,11 +386,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (currentGuess.length < GUESS_LENGTH) {
-                if (currentGuess.includes(value)) {
-                    showToast("ห้ามใช้เลขซ้ำ");
-                } else {
-                    currentGuess.push(value);
-                }
+                // *** LOGIC CHANGE: REMOVED CHECK FOR DUPLICATE GUESSES ***
+                currentGuess.push(value);
             }
         }
         updateGuessDisplay();
@@ -421,13 +420,34 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateClues(guess, answer) {
         let strikes = 0;
         let balls = 0;
+        let checkedAnswerIndexes = []; // Keep track of answer digits already used for a ball
+        let checkedGuessIndexes = []; // Keep track of guess digits that are strikes
+
+        // First pass: find all strikes
         guess.forEach((digit, index) => {
             if (digit === answer[index]) {
                 strikes++;
-            } else if (answer.includes(digit)) {
-                balls++;
+                checkedAnswerIndexes.push(index);
+                checkedGuessIndexes.push(index);
             }
         });
+
+        // Second pass: find all balls
+        guess.forEach((digit, index) => {
+            // Only check if this guess digit was not a strike
+            if (!checkedGuessIndexes.includes(index)) {
+                // Find the first matching digit in the answer that is not a strike and not already a ball
+                const ballIndex = answer.findIndex((ansDigit, ansIndex) => 
+                    !checkedAnswerIndexes.includes(ansIndex) && ansDigit === digit
+                );
+
+                if (ballIndex !== -1) {
+                    balls++;
+                    checkedAnswerIndexes.push(ballIndex); // Mark this answer digit as used for a ball
+                }
+            }
+        });
+        
         return { strikes, balls };
     }
 
@@ -505,9 +525,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateTurnIndicator(currentTurn) {
         const isMyTurn = currentTurn === currentPlayerId;
-        ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
-        ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
-        ui.turnText.textContent = isMyTurn ? "ตาของคุณ" : `ตาของ ${isMyTurn ? 'คุณ' : 'เพื่อน'}`;
+        db.ref(`rooms/${currentRoomId}/${opponentPlayerId}/name`).get().then(snapshot => {
+            const opponentName = snapshot.val() || 'เพื่อน';
+            ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
+            ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
+            ui.turnText.textContent = isMyTurn ? "ตาของคุณ" : `ตาของ ${opponentName}`;
+        });
     }
 
     // =================================================================
