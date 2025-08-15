@@ -775,9 +775,4 @@ document.addEventListener('DOMContentLoaded', function() {
         Object.keys(roomData.players).forEach(playerId => {
             if (roomData.players[playerId].connected) {
                 updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
-                updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
-                updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
-                updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
-            }
-        });
-
+                updates[`rooms/${currentRoom
