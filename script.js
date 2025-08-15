@@ -361,16 +361,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // --- START: CODE MODIFICATION ---
     function updateWaitingRoomUI(roomData) {
         ui.roomCodeText.textContent = roomData.roomName;
         const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
 
-        Object.values(ui.playerSlots).forEach(slot => slot.style.display = 'none');
+        // Reset all slots by removing 'active' class
+        Object.values(ui.playerSlots).forEach(slot => slot.classList.remove('active'));
 
-        connectedPlayers.forEach((player, index) => {
+        connectedPlayers.forEach((player) => {
             const slot = ui.playerSlots[player.id];
             if (slot) {
-                slot.style.display = 'flex';
+                // Add 'active' class to show the slot
+                slot.classList.add('active');
+                
                 const nameEl = slot.querySelector('.player-name');
                 const statusEl = slot.querySelector('.player-status');
                 
@@ -393,6 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ui.waitingMessage.textContent = 'รอเจ้าของห้องเริ่มเกม...';
         }
     }
+    // --- END: CODE MODIFICATION ---
 
     function updatePlayingUI(roomData) {
         const me = roomData.players[currentPlayerId];
