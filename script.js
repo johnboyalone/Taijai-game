@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentRoomId = null;
     let joiningRoomData = null; 
     let currentPlayerId = null;
-    let currentTargetId = null; // *** ตัวแปรใหม่: เก็บ ID ของเป้าหมายที่กำลังทาย ***
+    let currentTargetId = null;
     let roomListener = null;
     let roomListListener = null;
     let currentGuess = [];
@@ -76,9 +76,9 @@ document.addEventListener('DOMContentLoaded', function() {
         turnIndicator: document.getElementById('turn-indicator'),
         turnText: document.getElementById('turn-text'),
         ourNumberDisplay: document.getElementById('our-number-display'),
-        playerSummaryGrid: document.getElementById('player-summary-grid'), // *** UI ใหม่ ***
+        playerSummaryGrid: document.getElementById('player-summary-grid'),
         historyLog: document.getElementById('history-log'),
-        historyTargetName: document.getElementById('history-target-name'), // *** UI ใหม่ ***
+        historyTargetName: document.getElementById('history-target-name'),
         guessNumberContainer: document.getElementById('guess-number-container'),
         numberPadContainer: document.getElementById('number-pad-container'),
         chanceDots: [document.getElementById('chance-1'), document.getElementById('chance-2'), document.getElementById('chance-3')],
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
         gameOverTitle: document.getElementById('game-over-title'),
         winnerName: document.getElementById('winner-name'),
         gameOverMessage: document.getElementById('game-over-message'),
-        gameOverNumbersContainer: document.getElementById('game-over-numbers-container'), // *** UI ใหม่ ***
+        gameOverNumbersContainer: document.getElementById('game-over-numbers-container'),
         rematchBtn: document.getElementById('rematch-btn'),
         backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
 
@@ -126,20 +126,30 @@ document.addEventListener('DOMContentLoaded', function() {
         ui.passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
         ui.passwordModal.addEventListener('click', function(e) { if(e.target === this) this.classList.remove('show'); });
         ui.confirmJoinBtn.addEventListener('click', joinRoom);
+        
         ui.startGameBtn.addEventListener('click', () => {
             if (ui.startGameBtn.disabled) return;
-            db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-                if (roomData && roomData.gameState === 'waiting') {
-                    const connectedPlayerIds = Object.values(roomData.players)
-                                                   .filter(p => p.connected)
-                                                   .map(p => p.id);
-                    roomData.turnOrder = connectedPlayerIds;
-                    roomData.turn = connectedPlayerIds[0];
-                    roomData.gameState = 'setup';
+
+            db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
+                if (snapshot.exists()) {
+                    const roomData = snapshot.val();
+                    if (roomData.gameState === 'waiting') {
+                        const connectedPlayerIds = Object.values(roomData.players)
+                                                       .filter(p => p.connected)
+                                                       .map(p => p.id);
+                        
+                        const updates = {
+                            gameState: 'setup',
+                            turnOrder: connectedPlayerIds,
+                            turn: connectedPlayerIds[0]
+                        };
+
+                        db.ref(`rooms/${currentRoomId}`).update(updates);
+                    }
                 }
-                return roomData;
             });
         });
+
         ui.submitFinalAnswerBtn.addEventListener('click', submitFinalAnswer);
         ui.rematchBtn.addEventListener('click', requestRematch);
         ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
@@ -298,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const roomData = snapshot.val();
             const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
             
-            if (roomData.rematch && Object.values(roomData.rematch).filter(v => v === true).length === connectedPlayers.length) {
+            if (roomData.rematch && Object.values(roomData.rematch).filter(v => v === true).length === connectedPlayers.length && connectedPlayers.length > 1) {
                 resetGameForRematch(roomData);
                 return;
             }
@@ -697,13 +707,15 @@ document.addEventListener('DOMContentLoaded', function() {
         updates[`rooms/${currentRoomId}/turn`] = roomData.turnOrder[0];
         updates[`rooms/${currentRoomId}/winner`] = null;
         updates[`rooms/${currentRoomId}/reason`] = null;
+        updates[`rooms/${currentRoomId}/rematch`] = {};
         
         Object.keys(roomData.players).forEach(playerId => {
-            updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
-            updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
-            updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
-            updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
-            updates[`rooms/${currentRoomId}/rematch/${playerId}`] = false;
+            if (roomData.players[playerId].connected) {
+                updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
+                updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
+                updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
+                updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
+            }
         });
 
         db.ref().update(updates);
