@@ -16,13 +16,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const db = firebase.database();
 
     // ======== AUDIO ASSETS ========
-    const sounds = {
+let sounds = {}; // สร้าง Object ว่างๆ ไว้ก่อน
+let soundsInitialized = false; // สร้างตัวแปรเพื่อเช็คว่าเสียงถูกโหลดแล้วหรือยัง
+
+function initializeSounds() {
+    if (soundsInitialized) return; // ถ้าโหลดแล้ว ไม่ต้องทำซ้ำ
+    sounds = {
         click: new Audio('sounds/Drop.mp3'),
         wrongAnswer: new Audio('sounds/Wrong Answer.mp3'),
         win: new Audio('sounds/Anime Wow Sound Effect.mp3')
     };
     sounds.click.volume = 0.8;
     sounds.win.volume = 0.7;
+    soundsInitialized = true; // ตั้งค่าว่าโหลดเสียงเรียบร้อย
+    console.log("Sounds Initialized!"); // สำหรับเช็คว่าฟังก์ชันทำงาน
+}
 
     function playSound(sound) {
         if (sound && sound.readyState >= 2) {
@@ -143,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setupInitialListeners() {
         screens.splash.addEventListener('click', () => {
+initializeSounds();
             playSound(sounds.click);
             showScreen('lobby');
         });
@@ -328,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
                 if (connectedPlayers.length >= 2) {
                     roomData.gameState = 'setup';
-                    roomData.turnOrder = connectedPlayers.map(p => p.id).sort();
+                    roomData.turnOrder = connectedPlayers.map(p => p.id);
                     roomData.turn = roomData.turnOrder[0];
                 }
             }
@@ -831,7 +840,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(p => p.connected)
             .map(p => p.id);
             
-        updates[`rooms/${currentRoomId}/turnOrder`] = connectedPlayerIds.sort();
+        updates[`rooms/${currentRoomId}/turnOrder`] = connectedPlayerIds;
         updates[`rooms/${currentRoomId}/turn`] = connectedPlayerIds[0];
         updates[`rooms/${currentRoomId}/winner`] = null;
         updates[`rooms/${currentRoomId}/reason`] = null;
