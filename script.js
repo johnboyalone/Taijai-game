@@ -3,15 +3,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
     // ======== FIREBASE CONFIG & INITIALIZATION ========
     // =================================================================
+    
     const firebaseConfig = {
       apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
       authDomain: "taijai.firebaseapp.com",
       databaseURL: "https://taijai-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "taijai",
-      storageBucket: "taijai.appspot.com",
+      storageBucket: "taijai.firebasestorage.app",
       messagingSenderId: "262573756581",
       appId: "1:262573756581:web:c17bfc795b5cf139693d4c"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -136,7 +138,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupInitialListeners() {
         screens.splash.addEventListener('click', () => {
             showScreen('lobby');
-            // enterFullScreen(); // Can be annoying for testing
         });
         ui.goToCreateBtn.addEventListener('click', () => showScreen('createRoom'));
         ui.goToJoinBtn.addEventListener('click', () => {
@@ -220,6 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!hasRooms) {
                  ui.roomListContent.innerHTML = '<p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p>';
             }
+        }, error => {
+            console.error("Firebase read failed: ", error);
+            showToast("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
         });
     }
 
@@ -269,9 +273,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentPlayerId = availableSlotId;
                     currentRoomId = roomId;
                 } else {
-                    // This case should ideally not happen if room list is correct
                     showToast("ขออภัย, ห้องเต็มแล้ว");
-                    return; // Abort transaction
+                    return; 
                 }
             }
             return currentRoomData;
@@ -298,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
                 if (connectedPlayers.length >= 2) {
                     roomData.gameState = 'setup';
-                    roomData.turnOrder = connectedPlayers.map(p => p.id);
+                    roomData.turnOrder = connectedPlayers.map(p => p.id).sort();
                     roomData.turn = roomData.turnOrder[0];
                 }
             }
@@ -326,7 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (action === 'guess') {
                     showActionToast(`${actorName} กำลังทายเลขของ ${targetName}...`);
                 }
-                // Clear the action after showing it
                 db.ref(`rooms/${currentRoomId}/lastAction`).remove();
             }
 
@@ -359,18 +361,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateGameOverUI(roomData);
                     break;
             }
+        }, error => {
+            console.error("Firebase read failed: ", error);
+            showToast("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
         });
     }
+
     function updateWaitingRoomUI(roomData) {
         ui.roomCodeText.textContent = roomData.roomName;
         const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
 
-        Object.values(ui.playerSlots).forEach(slot => slot.style.display = 'none');
+        Object.values(ui.playerSlots).forEach(slot => slot.classList.remove('active'));
 
-        connectedPlayers.forEach((player, index) => {
+        connectedPlayers.forEach((player) => {
             const slot = ui.playerSlots[player.id];
             if (slot) {
-                slot.style.display = 'flex';
+                slot.classList.add('active');
+                
                 const nameEl = slot.querySelector('.player-name');
                 const statusEl = slot.querySelector('.player-status');
                 
@@ -397,7 +404,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function updatePlayingUI(roomData) {
         const me = roomData.players[currentPlayerId];
 
-        // Spectator Mode
         if (me.status === 'eliminated') {
             ui.spectatorOverlay.classList.add('show');
             ui.spectatorMessage.textContent = `คุณแพ้แล้ว! กำลังรับชมผู้เล่นที่เหลือ...`;
@@ -535,14 +541,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     roomData.players[currentPlayerId].guesses[currentTargetId].push(guessData);
 
-                    // Set last action for toast
                     roomData.lastAction = {
                         actorName: me.name,
                         targetName: opponent.name,
                         action: 'guess'
                     };
 
-                    // Advance turn
                     const currentIndex = roomData.turnOrder.indexOf(roomData.turn);
                     let nextIndex = (currentIndex + 1) % roomData.turnOrder.length;
                     roomData.turn = roomData.turnOrder[nextIndex];
@@ -561,7 +565,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let guessCopy = [...guess];
         let answerCopy = [...answer];
 
-        // Calculate strikes
         for (let i = guessCopy.length - 1; i >= 0; i--) {
             if (guessCopy[i] === answerCopy[i]) {
                 strikes++;
@@ -570,7 +573,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Calculate balls
         for (let i = 0; i < guessCopy.length; i++) {
             const foundIndex = answerCopy.indexOf(guessCopy[i]);
             if (foundIndex !== -1) {
@@ -645,48 +647,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 const me = roomData.players[currentPlayerId];
 
                 if (finalAnswer === opponent.number) {
-                    // Correct guess: eliminate the opponent
                     roomData.players[currentTargetId].status = 'eliminated';
-                    
-                    // Remove eliminated player from turn order
                     roomData.turnOrder = roomData.turnOrder.filter(id => id !== currentTargetId);
 
-                    // Check for winner
                     if (roomData.turnOrder.length === 1) {
                         roomData.gameState = 'finished';
                         roomData.winner = roomData.turnOrder[0];
                         roomData.reason = `${roomData.players[roomData.winner].name} คือผู้รอดชีวิตคนสุดท้าย!`;
                     } else {
-                        // Game continues, advance turn
                         const currentIndex = roomData.turnOrder.indexOf(roomData.turn);
-                        let nextIndex = (currentIndex + 1) % roomData.turnOrder.length;
-                        if (nextIndex >= roomData.turnOrder.length) nextIndex = 0; // Ensure it wraps around correctly
-                        roomData.turn = roomData.turnOrder[nextIndex];
+                        let nextIndex = currentIndex % roomData.turnOrder.length;
+                        if (roomData.turn === currentTargetId) {
+                           roomData.turn = roomData.turnOrder[nextIndex];
+                        } else {
+                           nextIndex = (roomData.turnOrder.indexOf(roomData.turn) + 1) % roomData.turnOrder.length;
+                           roomData.turn = roomData.turnOrder[nextIndex];
+                        }
                     }
 
                 } else {
-                    // Incorrect guess: lose a chance
                     me.finalChances -= 1;
                     if (me.finalChances <= 0) {
-                        // Player is eliminated
                         me.status = 'eliminated';
                         roomData.turnOrder = roomData.turnOrder.filter(id => id !== currentPlayerId);
 
-                        // Check for winner
                         if (roomData.turnOrder.length === 1) {
                             roomData.gameState = 'finished';
                             roomData.winner = roomData.turnOrder[0];
                             roomData.reason = `${roomData.players[roomData.winner].name} คือผู้รอดชีวิตคนสุดท้าย!`;
                         } else {
-                            // Game continues, advance turn
+                            if (roomData.turn === currentPlayerId) {
+                                const currentIndex = roomData.turnOrder.indexOf(me.id); // This will be -1
+                                roomData.turn = roomData.turnOrder[0]; // Default to first player in new order
+                            }
                             const currentIndex = roomData.turnOrder.indexOf(roomData.turn);
-                            // The current player is already removed, so the index might be off.
-                            // We just need to set the turn to the "next" player in the new, shorter turnOrder.
-                            let nextIndex = currentIndex % roomData.turnOrder.length;
+                            let nextIndex = (currentIndex + 1) % roomData.turnOrder.length;
                             roomData.turn = roomData.turnOrder[nextIndex];
                         }
                     } else {
-                         // Game continues, advance turn
                         const currentIndex = roomData.turnOrder.indexOf(roomData.turn);
                         let nextIndex = (currentIndex + 1) % roomData.turnOrder.length;
                         roomData.turn = roomData.turnOrder[nextIndex];
@@ -698,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         currentGuess = [];
         updateGuessDisplay();
-        currentTargetId = null; // Reset target after action
+        currentTargetId = null;
     }
 
     function updateChances(chances) {
@@ -744,7 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
             playerBox.addEventListener('click', () => {
                 if (player.status !== 'eliminated') {
                     currentTargetId = player.id;
-                    updatePlayerSummary(roomData); // Re-render to show selection
+                    updatePlayerSummary(roomData);
                     updateHistoryLog(roomData);
                 }
             });
@@ -782,13 +780,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function requestRematch() {
         db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}/rematch`).set(true);
         
-        // Check if all connected players have requested a rematch
         db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
             const roomData = snapshot.val();
             const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
             const allRematch = connectedPlayers.every(p => p.rematch);
 
-            if (allRematch) {
+            if (allRematch && connectedPlayers.length > 1) {
                 resetGameForRematch(roomData);
             }
         });
@@ -803,28 +800,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(p => p.connected)
             .map(p => p.id);
             
-        updates[`rooms/${currentRoomId}/turnOrder`] = connectedPlayerIds;
+        updates[`rooms/${currentRoomId}/turnOrder`] = connectedPlayerIds.sort();
         updates[`rooms/${currentRoomId}/turn`] = connectedPlayerIds[0];
         updates[`rooms/${currentRoomId}/winner`] = null;
         updates[`rooms/${currentRoomId}/reason`] = null;
         updates[`rooms/${currentRoomId}/lastAction`] = null;
         
         Object.keys(roomData.players).forEach(playerId => {
-            if (roomData.players[playerId].connected) {
-                updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
-                updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
-                updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
-                updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
-                updates[`rooms/${currentRoomId}/players/${playerId}/rematch`] = false;
-            }
-        });
-
-        db.ref().update(updates);
-    }
-
-    // =================================================================
-    // ======== INITIALIZATION ========
-    // =================================================================
-    setupInitialListeners();
-    showScreen('splash');
-});
+            if (roomData.
