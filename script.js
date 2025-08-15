@@ -105,14 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (screens[screenName]) screens[screenName].classList.add('show');
     }
 
-    function enterFullScreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) elem.requestFullscreen().catch(err => console.log(err));
-        else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
-        else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-        else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-    }
-
     function showToast(message) {
         ui.toast.textContent = message;
         ui.toast.classList.add('show');
@@ -138,7 +130,19 @@ document.addEventListener('DOMContentLoaded', function() {
         ui.confirmJoinBtn.addEventListener('click', joinRoom);
         ui.startGameBtn.addEventListener('click', () => {
             if (ui.startGameBtn.disabled) return;
-            db.ref(`rooms/${currentRoomId}`).update({ gameState: 'setup' });
+            // เมื่อกดเริ่มเกม จะต้องสร้าง turnOrder และเปลี่ยน gameState
+            db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
+                if (roomData && roomData.gameState === 'waiting') {
+                    // สร้างลำดับการเล่นจากผู้เล่นที่เชื่อมต่ออยู่
+                    roomData.turnOrder = Object.values(roomData.players)
+                                             .filter(p => p.connected)
+                                             .map(p => p.id);
+                    // กำหนดตาแรกเป็นของเจ้าของห้องเสมอ
+                    roomData.turn = 'player1';
+                    roomData.gameState = 'setup';
+                }
+                return roomData;
+            });
         });
         ui.submitFinalAnswerBtn.addEventListener('click', submitFinalAnswer);
         ui.rematchBtn.addEventListener('click', requestRematch);
@@ -183,7 +187,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }).catch(error => showToast('เกิดข้อผิดพลาด: ' + error.message));
     }
 
-    // *** แก้ไขแล้ว: ฟังก์ชัน loadAndDisplayRooms ***
     function loadAndDisplayRooms() {
         const roomsRef = db.ref('rooms').orderByChild('gameState').equalTo('waiting');
         if (roomListListener) roomsRef.off('value', roomListListener);
@@ -237,7 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // *** แก้ไขแล้ว: ฟังก์ชัน joinRoom ***
     function joinRoom() {
         const joinerName = ui.joinerNameInput.value.trim();
         if (!joinerName) {
@@ -289,7 +291,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
     // ======== REAL-TIME DATA SYNCING & GAME STATE MACHINE ========
     // =================================================================
-    // *** ยังไม่ได้แก้ไข: ฟังก์ชัน listenToRoomUpdates ***
     function listenToRoomUpdates() {
         const roomRef = db.ref('rooms/' + currentRoomId);
         if (roomListener) roomRef.off('value', roomListener);
@@ -308,7 +309,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 guessHistory = [];
             }
 
-            if (roomData.rematch && Object.values(roomData.rematch).every(v => v === true) && Object.keys(roomData.rematch).length === roomData.playerCount) {
+            const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
+            if (roomData.rematch && Object.values(roomData.rematch).every(v => v === true) && Object.keys(roomData.rematch).length === connectedPlayers.length) {
                 resetGameForRematch(roomData);
                 return;
             }
@@ -321,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!screens.game.classList.contains('show')) {
                         initializeGameUI(roomData);
                     }
-                    const allPlayersSetNumber = Object.values(roomData.players).filter(p => p.connected).every(p => p.numberSet);
+                    const allPlayersSetNumber = connectedPlayers.every(p => p.numberSet);
                     if (allPlayersSetNumber) {
                         db.ref(`rooms/${currentRoomId}`).update({ gameState: 'playing' });
                     }
@@ -339,32 +341,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // *** ยังไม่ได้แก้ไข: ฟังก์ชัน updateWaitingRoomUI ***
+    // *** แก้ไขแล้ว: ฟังก์ชัน updateWaitingRoomUI ***
     function updateWaitingRoomUI(roomData) {
-        // ส่วนนี้คือเป้าหมายของขั้นตอนต่อไป
         ui.roomCodeText.textContent = roomData.roomName;
-        
-        // โค้ดส่วนนี้ยังเป็นแบบเก่า และจะแสดงผลผิดพลาด
-        const p1Slot = ui.playerSlots.player1;
-        p1Slot.querySelector('.player-avatar-initial').textContent = roomData.players.player1.name.charAt(0).toUpperCase();
-        p1Slot.querySelector('.player-name').textContent = `${roomData.players.player1.name} (เจ้าของห้อง)`;
-        
-        const p2Slot = ui.playerSlots.player2;
-        if (roomData.players.player2.connected) {
-            p2Slot.querySelector('.player-avatar-initial').textContent = roomData.players.player2.name.charAt(0).toUpperCase();
-            p2Slot.querySelector('.player-avatar-initial').style.backgroundColor = '#f8c8dc';
-            p2Slot.querySelector('.player-name').textContent = roomData.players.player2.name;
-            p2Slot.querySelector('.player-status').textContent = 'เชื่อมต่อแล้ว';
-            p2Slot.querySelector('.player-status').className = 'player-status connected';
+
+        // วนลูปเพื่ออัปเดต UI ของผู้เล่นทุกคน
+        for (const playerId in ui.playerSlots) {
+            const slot = ui.playerSlots[playerId];
+            const playerData = roomData.players[playerId];
+            
+            const avatar = slot.querySelector('.player-avatar-initial');
+            const nameEl = slot.querySelector('.player-name');
+            const statusEl = slot.querySelector('.player-status');
+
+            if (playerData && playerData.connected) {
+                // ถ้าผู้เล่นเชื่อมต่ออยู่
+                avatar.textContent = playerData.name.charAt(0).toUpperCase();
+                avatar.style.backgroundColor = playerData.isHost ? '#89cff0' : '#f8c8dc'; // สีฟ้าสำหรับ Host, สีชมพูสำหรับคนอื่น
+                nameEl.textContent = playerData.isHost ? `${playerData.name} (เจ้าของห้อง)` : playerData.name;
+                statusEl.textContent = 'เชื่อมต่อแล้ว';
+                statusEl.className = 'player-status connected';
+            } else {
+                // ถ้าช่องว่าง
+                const playerNumber = playerId.replace('player', '');
+                avatar.textContent = '?';
+                avatar.style.backgroundColor = '#e2e8f0'; // สีเทา
+                nameEl.textContent = `ผู้เล่น ${playerNumber}`;
+                statusEl.textContent = 'กำลังรอ...';
+                statusEl.className = 'player-status waiting';
+            }
         }
 
-        if (currentPlayerId === 'player1' && roomData.playerCount >= 2) {
-            ui.startGameBtn.disabled = false;
-            ui.waitingMessage.textContent = `มีผู้เล่น ${roomData.playerCount} คน กดเริ่มเกมได้เลย!`;
-        } else if (currentPlayerId === 'player1') {
-            ui.startGameBtn.disabled = true;
-            ui.waitingMessage.textContent = 'รอผู้เล่นอย่างน้อย 2 คน...';
-        } else {
+        // อัปเดตปุ่มเริ่มเกมและข้อความ
+        if (currentPlayerId === 'player1') { // เฉพาะเจ้าของห้องที่เห็นปุ่ม
+            if (roomData.playerCount >= 2) {
+                ui.startGameBtn.disabled = false;
+                ui.waitingMessage.textContent = `มีผู้เล่น ${roomData.playerCount} คน กดเริ่มเกมได้เลย!`;
+            } else {
+                ui.startGameBtn.disabled = true;
+                ui.waitingMessage.textContent = 'รอผู้เล่นอย่างน้อย 2 คน...';
+            }
+        } else { // ผู้เล่นอื่นจะเห็นข้อความนี้
             ui.startGameBtn.disabled = true;
             ui.waitingMessage.textContent = 'รอเจ้าของห้องเริ่มเกม...';
         }
@@ -647,10 +664,12 @@ document.addEventListener('DOMContentLoaded', function() {
         updates[`rooms/${currentRoomId}/reason`] = null;
         
         Object.keys(roomData.players).forEach(playerId => {
-            updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
-            updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
-            updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
-            updates[`rooms/${currentRoomId}/rematch/${playerId}`] = false;
+            if (roomData.players[playerId].connected) { // รีเซ็ตเฉพาะคนที่ยังอยู่
+                updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
+                updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
+                updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
+            }
+            updates[`rooms/${currentRoomId}/rematch/${playerId}`] = false; // รีเซ็ตสถานะ rematch ทุกคน
         });
 
         db.ref().update(updates);
