@@ -140,7 +140,6 @@
             <!-- Guess Input Section -->
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
-                <!-- *** โค้ดที่เพิ่มกลับเข้ามา *** -->
                 <div id="guess-number-container" class="input-container">
                     <div class="number-input"></div>
                     <div class="number-input"></div>
@@ -159,6 +158,10 @@
                 </div>
                 <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
             </div>
+        </div>
+        <!-- Spectator Overlay -->
+        <div id="spectator-overlay" class="spectator-overlay">
+            <div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div>
         </div>
     </div>
 
@@ -188,6 +191,9 @@
         </div>
     </div>
     <div id="toast" class="toast-notification"></div>
+    <div id="action-toast" class="action-toast">
+        <p id="action-toast-text"></p>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
