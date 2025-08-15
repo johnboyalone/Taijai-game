@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -18,11 +18,11 @@
             <div class="instructions">
                 <h2>วิธีการเล่น (4 คน)</h2>
                 <ol>
-                    <li>ผู้เล่นทุกคนตั้งเลขลับ 4 หลักของตัวเอง</li>
-                    <li>ในแต่ละตา ผู้เล่นจะเลือก "เป้าหมาย" ที่จะทายเลข</li>
-                    <li>ทายเลข 4 หลักของเป้าหมาย เพื่อเก็บข้อมูล (Strike/Ball)</li>
-                    <li>เมื่อมั่นใจ สามารถใช้ "โอกาสตอบสุดท้าย" (มี 3 ครั้ง) เพื่อกำจัดเป้าหมาย</li>
-                    <li>ใครอยู่รอดเป็นคนสุดท้าย เป็นผู้ชนะ!</li>
+                    <li>ผู้เล่น 2-4 คน จะได้รับเลขลับ 4 หลักของตัวเอง</li>
+                    <li>เลือกเป้าหมายที่จะทายเลข แล้วทายเลขของเป้าหมายนั้น</li>
+                    <li>เมื่อมั่นใจ ให้ "ส่งคำตอบสุดท้าย" เพื่อกำจัดเป้าหมาย</li>
+                    <li>ถ้าตอบผิด จะเสียโอกาส (มี 3 ครั้ง) ถ้าโอกาสหมดจะแพ้</li>
+                    <li>คนที่อยู่รอดเป็นคนสุดท้ายคือผู้ชนะ!</li>
                 </ol>
                 <p class="start-prompt">(แตะที่หน้าจอเพื่อไปต่อ)</p>
             </div>
@@ -86,23 +86,27 @@
             <h2 class="waiting-room-title">ห้องรอเล่น</h2>
             <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
             <div class="player-list">
+                <!-- Player 1 Slot -->
                 <div class="player-slot" id="player1-slot">
-                    <div class="player-icon">?</div>
-                    <span class="player-name">ผู้เล่น 1 (เจ้าของห้อง)</span>
+                    <div class="player-avatar-initial">?</div>
+                    <span class="player-name">ผู้เล่น 1</span>
                     <span class="player-status waiting">กำลังรอ...</span>
                 </div>
+                <!-- Player 2 Slot -->
                 <div class="player-slot" id="player2-slot">
-                    <div class="player-icon">?</div>
+                    <div class="player-avatar-initial">?</div>
                     <span class="player-name">ผู้เล่น 2</span>
                     <span class="player-status waiting">กำลังรอ...</span>
                 </div>
+                <!-- Player 3 Slot -->
                 <div class="player-slot" id="player3-slot">
-                    <div class="player-icon">?</div>
+                    <div class="player-avatar-initial">?</div>
                     <span class="player-name">ผู้เล่น 3</span>
                     <span class="player-status waiting">กำลังรอ...</span>
                 </div>
+                <!-- Player 4 Slot -->
                 <div class="player-slot" id="player4-slot">
-                    <div class="player-icon">?</div>
+                    <div class="player-avatar-initial">?</div>
                     <span class="player-name">ผู้เล่น 4</span>
                     <span class="player-status waiting">กำลังรอ...</span>
                 </div>
@@ -118,23 +122,33 @@
             <span id="turn-text">กำลังรอ...</span>
         </div>
         <div class="main-container">
+            <!-- Our Number Section -->
             <div class="section">
                 <h2 class="section-title">⭐ เลขของเรา</h2>
                 <div id="our-number-display" class="input-container"></div>
             </div>
+            <!-- Target Selection Section -->
             <div class="section">
                 <h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2>
                 <div id="player-summary-grid" class="player-summary-grid"></div>
             </div>
+            <!-- History Section -->
             <div class="section">
-                <h2 class="section-title">📜 ประวัติการทาย <span id="history-target-name"></span></h2>
+                <h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2>
                 <div id="history-log" class="history-log"></div>
             </div>
+            <!-- Guess Input Section -->
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
-                <div id="guess-number-container" class="input-container"></div>
+                <div id="guess-number-container" class="input-container">
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                </div>
                 <div id="number-pad-container" class="number-grid"></div>
             </div>
+            <!-- Final Answer Section -->
             <div class="final-answer-section">
                 <div class="final-answer-chances">
                     โอกาสตอบ: 
@@ -145,8 +159,9 @@
                 <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
             </div>
         </div>
+        <!-- Spectator Overlay -->
         <div id="spectator-overlay" class="spectator-overlay">
-            <p id="spectator-message"></p>
+            <div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div>
         </div>
     </div>
 
@@ -155,8 +170,8 @@
         <div class="game-over-container">
             <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
             <h2 id="winner-name" class="winner-name"></h2>
-            <p id="game-over-message" class="game-over-message">คุณทายเลขของเพื่อนได้สำเร็จ!</p>
-            <div id="game-over-numbers-container" class="game-over-numbers">
+            <p id="game-over-message" class="game-over-message"></p>
+            <div class="game-over-numbers" id="game-over-numbers-container">
                 <!-- Numbers will be added here by JS -->
             </div>
             <div class="game-over-buttons">
@@ -183,9 +198,8 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
-    <!-- Your Game Script (Deferred) -->
-    <script src="script.js?v=1.1" defer></script>
+    
+    <script src="script.js"></script>
 
 </body>
 </html>
