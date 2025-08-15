@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting
+--tokenkenken: Deploy to Firebase Hosting
 
 on:
   push:
@@ -11,4 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: npm install -g firebase-tools
-      - run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
+      - run: firebase deploy --only hosting --project taijai --token "${{ secrets.FIREBASE_TOKEN }}"
