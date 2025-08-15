@@ -125,33 +125,7 @@ body {
 .waiting-room-title { margin-bottom: 15px; }
 .room-code-display { background-color: #edf2f7; padding: 10px; border-radius: 12px; margin-bottom: 20px; }
 .player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
-
-/* --- START: CODE MODIFICATION --- */
-.player-slot {
-    display: flex;
-    align-items: center;
-    background-color: #f7fafc;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    gap: 15px;
-    overflow: hidden;
-    transition: max-height 0.4s ease, padding 0.4s ease, border 0.4s ease, margin 0.4s ease;
-    max-height: 0; /* Hide by default */
-    padding-top: 0;
-    padding-bottom: 0;
-    border-width: 0;
-    margin-bottom: 0;
-}
-
-.player-slot.active {
-    max-height: 100px; /* Show when active */
-    padding-top: 12px;
-    padding-bottom: 12px;
-    border-width: 1px;
-}
-/* --- END: CODE MODIFICATION --- */
-
+.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
 .player-icon {
     width: 40px;
     height: 40px;
