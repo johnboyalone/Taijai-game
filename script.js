@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ======== GAME STATE VARIABLES ========
     // =================================================================
     let currentRoomId = null;
-    let joiningRoomData = null; // Stores {id, name} of the room being joined
+    let joiningRoomData = null; 
     let currentPlayerId = null;
     let opponentPlayerId = null;
     let ourNumber = null;
@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let roomListener = null;
     let roomListListener = null;
     let currentGuess = [];
+    let guessHistory = []; // *** NEW: To store previous guesses locally ***
     const GUESS_LENGTH = 4;
 
     // =================================================================
@@ -335,17 +336,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         createNumberPad();
         currentGuess = [];
+        guessHistory = []; // Reset guess history for new game
         ui.historyLog.innerHTML = '';
         
         db.ref(`rooms/${currentRoomId}/${currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
         showToast('เกมเริ่ม! นี่คือเลขของคุณ');
     }
 
-    // *** LOGIC CHANGE: ALLOW DUPLICATE NUMBERS ***
     function generateRandomNumber() {
         let result = [];
         for (let i = 0; i < GUESS_LENGTH; i++) {
-            // Just pick a random digit from 0-9 for each slot
             result.push(Math.floor(Math.random() * 10).toString());
         }
         return result;
@@ -353,13 +353,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createNumberPad() {
         ui.numberPadContainer.innerHTML = '';
-        // Re-ordered for a 3x3 grid + special buttons at the bottom
         const buttons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ลบ', '0', 'ทาย'];
         buttons.forEach(val => {
             const cell = document.createElement('div');
             cell.className = 'number-cell';
             cell.textContent = val;
-            cell.dataset.value = val; // Add data-value for CSS targeting
+            cell.dataset.value = val;
             if (val === 'ลบ' || val === 'ทาย') {
                 cell.classList.add('special');
             }
@@ -386,7 +385,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (currentGuess.length < GUESS_LENGTH) {
-                // *** LOGIC CHANGE: REMOVED CHECK FOR DUPLICATE GUESSES ***
                 currentGuess.push(value);
             }
         }
@@ -402,6 +400,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function submitGuess() {
         const guessString = currentGuess.join('');
+
+        // *** NEW: Check if the guess has been made before ***
+        if (guessHistory.includes(guessString)) {
+            showToast("คุณเคยทายเลขนี้ไปแล้ว!");
+            return; // Stop the function here
+        }
+
         const clues = calculateClues(currentGuess, opponentNumber.split(''));
         
         const guessData = {
@@ -420,10 +425,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateClues(guess, answer) {
         let strikes = 0;
         let balls = 0;
-        let checkedAnswerIndexes = []; // Keep track of answer digits already used for a ball
-        let checkedGuessIndexes = []; // Keep track of guess digits that are strikes
+        let checkedAnswerIndexes = []; 
+        let checkedGuessIndexes = []; 
 
-        // First pass: find all strikes
         guess.forEach((digit, index) => {
             if (digit === answer[index]) {
                 strikes++;
@@ -432,18 +436,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Second pass: find all balls
         guess.forEach((digit, index) => {
-            // Only check if this guess digit was not a strike
             if (!checkedGuessIndexes.includes(index)) {
-                // Find the first matching digit in the answer that is not a strike and not already a ball
                 const ballIndex = answer.findIndex((ansDigit, ansIndex) => 
                     !checkedAnswerIndexes.includes(ansIndex) && ansDigit === digit
                 );
 
                 if (ballIndex !== -1) {
                     balls++;
-                    checkedAnswerIndexes.push(ballIndex); // Mark this answer digit as used for a ball
+                    checkedAnswerIndexes.push(ballIndex);
                 }
             }
         });
@@ -453,8 +454,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateHistoryLog(guesses) {
         ui.historyLog.innerHTML = '';
+        guessHistory = []; // *** NEW: Reset and rebuild the history array ***
         if (!guesses) return;
         Object.values(guesses).forEach(item => {
+            guessHistory.push(item.guess); // *** NEW: Add guess to the local array ***
             const historyItem = document.createElement('div');
             historyItem.className = 'history-item';
             
