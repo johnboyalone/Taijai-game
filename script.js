@@ -363,87 +363,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
     function updateWaitingRoomUI(roomData) {
         ui.roomCodeText.textContent = roomData.roomName;
+        const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
 
-        for (const playerId in ui.playerSlots) {
-            const slot = ui.playerSlots[playerId];
-            const playerData = roomData.players[playerId];
-            
-            const avatar = slot.querySelector('.player-avatar-initial');
-            const nameEl = slot.querySelector('.player-name');
-            const statusEl = slot.querySelector('.player-status');
+        Object.values(ui.playerSlots).forEach(slot => slot.style.display = 'none');
 
-            if (playerData && playerData.connected) {
-                avatar.textContent = playerData.name.charAt(0).toUpperCase();
-                avatar.style.backgroundColor = playerData.isHost ? '#89cff0' : '#f8c8dc';
-                nameEl.textContent = playerData.isHost ? `${playerData.name} (เจ้าของห้อง)` : playerData.name;
-                statusEl.textContent = 'เชื่อมต่อแล้ว';
-                statusEl.className = 'player-status connected';
-            } else {
-                const playerNumber = playerId.replace('player', '');
-                avatar.textContent = '?';
-                avatar.style.backgroundColor = '#e2e8f0';
-                nameEl.textContent = `ผู้เล่น ${playerNumber}`;
-                statusEl.textContent = 'กำลังรอ...';
-                statusEl.className = 'player-status waiting';
-            }
-        }
+        connectedPlayers.forEach(player => {
+            const slot = ui.playerSlots[player.id];
+            slot.style.display = 'flex';
+            slot.querySelector('.player-name').textContent = `${player.name} ${player.isHost ? '(เจ้าของห้อง)' : ''}`;
+            slot.querySelector('.player-status').textContent = 'เชื่อมต่อแล้ว';
+            slot.querySelector('.player-status').className = 'player-status connected';
+        });
 
         if (currentPlayerId === 'player1') {
-            if (roomData.playerCount >= 2) {
+            if (connectedPlayers.length >= 2) {
                 ui.startGameBtn.disabled = false;
-                ui.waitingMessage.textContent = `มีผู้เล่น ${roomData.playerCount} คน กดเริ่มเกมได้เลย!`;
+                ui.waitingMessage.textContent = 'พร้อมแล้วกด "เริ่มเกม" ได้เลย!';
             } else {
                 ui.startGameBtn.disabled = true;
-                ui.waitingMessage.textContent = 'รอผู้เล่นอย่างน้อย 2 คน...';
+                ui.waitingMessage.textContent = 'รอผู้เล่นอย่างน้อย 2 คนเพื่อเริ่มเกม...';
             }
         } else {
-            ui.startGameBtn.disabled = true;
             ui.waitingMessage.textContent = 'รอเจ้าของห้องเริ่มเกม...';
         }
     }
 
     function updatePlayingUI(roomData) {
-        const myData = roomData.players[currentPlayerId];
+        const myPlayer = roomData.players[currentPlayerId];
         
-        if (myData.status === 'eliminated') {
+        if (myPlayer.status === 'eliminated') {
             ui.spectatorOverlay.classList.add('show');
-            ui.spectatorMessage.textContent = `คุณแพ้แล้ว! กำลังรับชม...`;
+            ui.spectatorMessage.textContent = "คุณแพ้แล้ว! กำลังรับชมผู้เล่นที่เหลือ...";
         } else {
             ui.spectatorOverlay.classList.remove('show');
-        }
-
-        const activePlayers = Object.values(roomData.players).filter(p => p.status === 'playing' && p.connected);
-        if (activePlayers.length <= 1 && roomData.playerCount > 1 && roomData.gameState === 'playing') {
-            db.ref(`rooms/${currentRoomId}`).update({
-                gameState: 'finished',
-                winner: activePlayers[0]?.id || null,
-                reason: 'เป็นผู้รอดชีวิตคนสุดท้าย!'
-            });
-            return;
         }
 
         updateTurnIndicator(roomData);
         updatePlayerSummaryGrid(roomData);
         updateHistoryLog(roomData);
-        updateChances(myData.finalChances);
+        updateChances(myPlayer.finalChances);
     }
 
     function updateGameOverUI(roomData) {
-        const myPlayerData = roomData.players[currentPlayerId];
-        if (myPlayerData && myPlayerData.connected) {
-            if (roomData.rematch && roomData.rematch[currentPlayerId]) {
-                ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
-                ui.rematchBtn.disabled = true;
-            } else {
-                ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
-                ui.rematchBtn.disabled = false;
-            }
-        } else {
-            ui.rematchBtn.textContent = 'คุณไม่ได้เชื่อมต่อ';
+        const myPlayer = roomData.players[currentPlayerId];
+        if (roomData.rematch && roomData.rematch[myPlayer.id]) {
+            ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
             ui.rematchBtn.disabled = true;
+        } else {
+            ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
+            ui.rematchBtn.disabled = false;
         }
     }
 
@@ -453,54 +423,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeGameUI(roomData) {
         showScreen('game');
-        const ourNumber = generateRandomNumber();
+        const myNumber = generateRandomNumber();
         ui.ourNumberDisplay.innerHTML = '';
-        for (let i = 0; i < GUESS_LENGTH; i++) {
-            ui.ourNumberDisplay.innerHTML += `<div class="number-input">${ourNumber[i]}</div>`;
-        }
+        myNumber.forEach(digit => {
+            ui.ourNumberDisplay.innerHTML += `<div class="number-input">${digit}</div>`;
+        });
         
         createNumberPad();
         currentGuess = [];
         updateGuessDisplay();
         
-        const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId && roomData.players[id].status === 'playing');
-        currentTargetId = firstTarget;
-
-        db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
-        showToast('เกมเริ่ม! กรุณาตั้งเลขของคุณ');
-    }
-
-    function updatePlayerSummaryGrid(roomData) {
-        ui.playerSummaryGrid.innerHTML = '';
-        const opponents = roomData.turnOrder.filter(id => id !== currentPlayerId);
-
-        opponents.forEach(opponentId => {
-            const opponentData = roomData.players[opponentId];
-            const card = document.createElement('div');
-            card.className = 'player-summary-card';
-            card.dataset.playerId = opponentId;
-
-            if (opponentData.status === 'eliminated') {
-                card.classList.add('is-eliminated');
-            }
-            if (opponentId === currentTargetId) {
-                card.classList.add('is-target');
-            }
-
-            card.innerHTML = `
-                <div class="summary-card-name">${opponentData.name}</div>
-                <div class="summary-card-status">${opponentData.status === 'eliminated' ? 'แพ้แล้ว' : 'กำลังเล่น'}</div>
-            `;
-
-            if (opponentData.status !== 'eliminated') {
-                card.addEventListener('click', () => {
-                    currentTargetId = opponentId;
-                    updatePlayerSummaryGrid(roomData);
-                    updateHistoryLog(roomData);
-                });
-            }
-            ui.playerSummaryGrid.appendChild(card);
-        });
+        db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ number: myNumber.join(''), numberSet: true });
+        showToast('เกมเริ่ม! นี่คือเลขของคุณ');
     }
 
     function generateRandomNumber() {
@@ -518,93 +452,94 @@ document.addEventListener('DOMContentLoaded', function() {
             const cell = document.createElement('div');
             cell.className = 'number-cell';
             cell.textContent = val;
-            if (val === 'ลบ' || val === 'ทาย') cell.classList.add('special');
+            if (val === 'ลบ' || val === 'ทาย') {
+                cell.classList.add('special');
+            }
             cell.addEventListener('click', () => handleNumberPadClick(val));
             ui.numberPadContainer.appendChild(cell);
         });
     }
 
     function handleNumberPadClick(value) {
-        if (ui.turnIndicator.classList.contains('their-turn')) {
+        const isMyTurn = ui.turnIndicator.classList.contains('my-turn');
+        if (!isMyTurn) {
             showToast("ยังไม่ถึงตาของคุณ!");
             return;
         }
 
         if (value === 'ลบ') {
-            if (currentGuess.length > 0) currentGuess.pop();
-        } else if (value === 'ทาย') {
-            if (!currentTargetId) {
-                showToast("กรุณาเลือกเป้าหมายที่จะทายก่อน");
-                return;
+            if (currentGuess.length > 0) {
+                currentGuess.pop();
             }
+        } else if (value === 'ทาย') {
             if (currentGuess.length === GUESS_LENGTH) {
                 submitGuess();
             } else {
                 showToast(`กรุณาใส่เลขให้ครบ ${GUESS_LENGTH} ตัว`);
             }
         } else {
-            if (currentGuess.length < GUESS_LENGTH) currentGuess.push(value);
+            if (currentGuess.length < GUESS_LENGTH) {
+                currentGuess.push(value);
+            }
         }
         updateGuessDisplay();
     }
 
     function updateGuessDisplay() {
         const guessInputs = ui.guessNumberContainer.children;
-        if (!guessInputs) return;
         for (let i = 0; i < GUESS_LENGTH; i++) {
-            if (guessInputs[i]) {
-                guessInputs[i].textContent = currentGuess[i] || '';
-            }
+            guessInputs[i].textContent = currentGuess[i] || '';
         }
     }
 
     function submitGuess() {
+        if (!currentTargetId) {
+            showToast("กรุณาเลือกเป้าหมายที่จะทายก่อน");
+            return;
+        }
         const guessString = currentGuess.join('');
-        
-        db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-            if (roomData) {
-                const opponentNumber = roomData.players[currentTargetId].number;
+
+        db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}/guesses/${currentTargetId}`).once('value', snapshot => {
+            const history = snapshot.val() || [];
+            if (Object.values(history).some(item => item.guess === guessString)) {
+                showToast("คุณเคยทายเลขนี้ไปแล้ว!");
+                return;
+            }
+
+            db.ref(`rooms/${currentRoomId}/players/${currentTargetId}/number`).get().then(snapshot => {
+                const opponentNumber = snapshot.val();
                 const clues = calculateClues(currentGuess, opponentNumber.split(''));
                 
                 const guessData = {
                     guess: guessString,
                     strikes: clues.strikes,
-                    balls: clues.balls,
-                    by: currentPlayerId
+                    balls: clues.balls
                 };
-                
-                const historyPath = `players/${currentTargetId}/guesses`;
-                if (!roomData.players[currentTargetId].guesses) {
-                    roomData.players[currentTargetId].guesses = {};
-                }
-                const newGuessKey = db.ref(`rooms/${currentRoomId}/${historyPath}`).push().key;
-                roomData.players[currentTargetId].guesses[newGuessKey] = guessData;
 
-                const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-                const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-                const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-                roomData.turn = activePlayers[nextTurnIndex];
-
-                roomData.lastAction = {
-                    actorName: roomData.players[currentPlayerId].name,
-                    targetName: roomData.players[currentTargetId].name,
+                const updates = {};
+                updates[`rooms/${currentRoomId}/players/${currentPlayerId}/guesses/${currentTargetId}/${Date.now()}`] = guessData;
+                updates[`rooms/${currentRoomId}/turn`] = getNextTurn();
+                updates[`rooms/${currentRoomId}/lastAction`] = {
+                    actorName: document.querySelector(`#player-summary-${currentPlayerId} .player-summary-name`).textContent,
+                    targetName: document.querySelector(`#player-summary-${currentTargetId} .player-summary-name`).textContent,
                     type: 'guess',
                     timestamp: Date.now()
                 };
-            }
-            return roomData;
-        }).then(() => {
-            currentGuess = [];
-            updateGuessDisplay();
+                db.ref().update(updates);
+
+                currentGuess = [];
+                updateGuessDisplay();
+            });
         });
     }
 
     function calculateClues(guess, answer) {
         let strikes = 0;
         let balls = 0;
-        const answerCopy = [...answer];
         const guessCopy = [...guess];
+        const answerCopy = [...answer];
 
+        // Calculate strikes
         for (let i = guessCopy.length - 1; i >= 0; i--) {
             if (guessCopy[i] === answerCopy[i]) {
                 strikes++;
@@ -613,11 +548,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Calculate balls
         for (let i = 0; i < guessCopy.length; i++) {
-            const foundIndex = answerCopy.indexOf(guessCopy[i]);
-            if (foundIndex !== -1) {
+            const ballIndex = answerCopy.indexOf(guessCopy[i]);
+            if (ballIndex !== -1) {
                 balls++;
-                answerCopy.splice(foundIndex, 1);
+                answerCopy.splice(ballIndex, 1);
             }
         }
         return { strikes, balls };
@@ -626,14 +562,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateHistoryLog(roomData) {
         ui.historyLog.innerHTML = '';
         if (!currentTargetId) {
-            ui.historyTargetName.textContent = 'ไม่มี';
+            ui.historyTargetName.textContent = '(เลือกเป้าหมาย)';
             return;
         }
-
-        const targetData = roomData.players[currentTargetId];
-        ui.historyTargetName.textContent = targetData.name;
         
-        const guesses = targetData.guesses;
+        const targetName = roomData.players[currentTargetId].name;
+        ui.historyTargetName.textContent = `(${targetName})`;
+
+        const guesses = roomData.players[currentPlayerId].guesses?.[currentTargetId];
         if (!guesses) return;
 
         Object.values(guesses).forEach(item => {
@@ -641,9 +577,15 @@ document.addEventListener('DOMContentLoaded', function() {
             historyItem.className = 'history-item';
             
             let cluesHTML = '';
-            if (item.strikes > 0) cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
-            if (item.balls > 0) cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
-            if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box" style="background-color: #a0aec0;">OUT</div>`;
+            if (item.strikes > 0) {
+                cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
+            }
+            if (item.balls > 0) {
+                cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
+            }
+            if (item.strikes === 0 && item.balls === 0) {
+                cluesHTML = `<div class="clue-box" style="background-color: #a0aec0;">OUT</div>`;
+            }
 
             historyItem.innerHTML = `
                 <div class="history-guess">${item.guess}</div>
@@ -655,7 +597,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function submitFinalAnswer() {
-        if (ui.turnIndicator.classList.contains('their-turn')) {
+        const isMyTurn = ui.turnIndicator.classList.contains('my-turn');
+        if (!isMyTurn) {
             showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!");
             return;
         }
@@ -669,42 +612,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const finalAnswer = currentGuess.join('');
+        const updates = {};
         
-        db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-            if (roomData) {
-                const targetPlayer = roomData.players[currentTargetId];
-                const actorPlayer = roomData.players[currentPlayerId];
-                let actionType = '';
+        db.ref(`rooms/${currentRoomId}/players/${currentTargetId}/number`).get().then(snapshot => {
+            const opponentNumber = snapshot.val();
+            const actorName = document.querySelector(`#player-summary-${currentPlayerId} .player-summary-name`).textContent;
+            const targetName = document.querySelector(`#player-summary-${currentTargetId} .player-summary-name`).textContent;
 
-                if (finalAnswer === targetPlayer.number) {
-                    targetPlayer.status = 'eliminated';
-                    actionType = 'final_correct';
+            if (finalAnswer === opponentNumber) {
+                updates[`rooms/${currentRoomId}/players/${currentTargetId}/status`] = 'eliminated';
+                updates[`rooms/${currentRoomId}/lastAction`] = { actorName, targetName, type: 'final_correct', timestamp: Date.now() };
+                
+                const remainingPlayers = Object.values(document.querySelectorAll('.player-summary-box:not(.eliminated)'));
+                if (remainingPlayers.length <= 2) { // Will be 2 before this update, 1 after
+                    updates[`rooms/${currentRoomId}/gameState`] = 'finished';
+                    updates[`rooms/${currentRoomId}/winner`] = currentPlayerId;
+                    updates[`rooms/${currentRoomId}/reason`] = `${actorName} เป็นผู้ชนะคนสุดท้าย!`;
                 } else {
-                    actorPlayer.finalChances--;
-                    if (actorPlayer.finalChances <= 0) {
-                        actorPlayer.status = 'eliminated';
+                    updates[`rooms/${currentRoomId}/turn`] = getNextTurn();
+                }
+            } else {
+                updates[`rooms/${currentRoomId}/lastAction`] = { actorName, targetName, type: 'final_wrong', timestamp: Date.now() };
+                const chancesRef = db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}/finalChances`);
+                chancesRef.transaction(currentChances => {
+                    if (currentChances > 1) {
+                        return currentChances - 1;
                     }
-                    actionType = 'final_wrong';
-                }
-                
-                roomData.lastAction = {
-                    actorName: actorPlayer.name,
-                    targetName: targetPlayer.name,
-                    type: actionType,
-                    timestamp: Date.now()
-                };
-
-                const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-                const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-                const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-                roomData.turn = activePlayers[nextTurnIndex];
-                
-                if (targetPlayer.status === 'eliminated' && currentTargetId === roomData.turn) {
-                    // This logic is complex, we'll let the user re-select for now.
-                }
+                    updates[`rooms/${currentRoomId}/players/${currentPlayerId}/status`] = 'eliminated';
+                    
+                    const remainingPlayers = Object.values(document.querySelectorAll('.player-summary-box:not(.eliminated)'));
+                    if (remainingPlayers.length <= 2) {
+                        updates[`rooms/${currentRoomId}/gameState`] = 'finished';
+                        updates[`rooms/${currentRoomId}/winner`] = remainingPlayers.find(p => p.id.split('-')[2] !== currentPlayerId).id.split('-')[2];
+                        updates[`rooms/${currentRoomId}/reason`] = `${actorName} ใช้โอกาสสุดท้ายพลาดและแพ้ไป!`;
+                    } else {
+                       updates[`rooms/${currentRoomId}/turn`] = getNextTurn();
+                    }
+                    db.ref().update(updates);
+                    return 0;
+                });
+                showToast("คำตอบไม่ถูกต้อง! คุณเสียโอกาสไป 1 ครั้ง");
             }
-            return roomData;
-        }).then(() => {
+            
+            db.ref().update(updates);
             currentGuess = [];
             updateGuessDisplay();
         });
@@ -717,17 +667,56 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateTurnIndicator(roomData) {
-        const currentTurnId = roomData.turn;
-        const isMyTurn = currentTurnId === currentPlayerId;
+        const currentTurnPlayerId = roomData.turn;
+        const turnPlayer = roomData.players[currentTurnPlayerId];
+        const isMyTurn = currentTurnPlayerId === currentPlayerId;
+        
         ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
         ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
+        ui.turnText.textContent = isMyTurn ? "ตาของคุณ" : `ตาทายของ ${turnPlayer.name}`;
+    }
+
+    function updatePlayerSummaryGrid(roomData) {
+        ui.playerSummaryGrid.innerHTML = '';
+        const playingPlayers = Object.values(roomData.players).filter(p => p.connected);
+
+        playingPlayers.forEach(player => {
+            const playerBox = document.createElement('div');
+            playerBox.className = 'player-summary-box';
+            playerBox.id = `player-summary-${player.id}`;
+            
+            if (player.status === 'eliminated') {
+                playerBox.classList.add('eliminated');
+            }
+            if (player.id === currentPlayerId) {
+                playerBox.classList.add('is-me');
+            }
+            if (player.id === currentTargetId) {
+                playerBox.classList.add('selected');
+            }
+
+            playerBox.innerHTML = `<div class="player-summary-name">${player.name}</div><div class="player-summary-status">${player.status === 'eliminated' ? 'แพ้แล้ว' : 'กำลังเล่น'}</div>`;
+            
+            if (player.id !== currentPlayerId && player.status !== 'eliminated') {
+                playerBox.addEventListener('click', () => {
+                    currentTargetId = player.id;
+                    updatePlayingUI(roomData); // Re-render to show selection
+                });
+            }
+            ui.playerSummaryGrid.appendChild(playerBox);
+        });
+    }
+
+    function getNextTurn() {
+        const turnOrder = Array.from(document.querySelectorAll('.player-summary-box:not(.eliminated)'))
+                               .map(box => box.id.split('-')[2]);
+        const currentTurn = document.querySelector('.my-turn') ? currentPlayerId : document.querySelector('.their-turn') ? document.querySelector('.their-turn').id.split('-')[2] : null;
         
-        if (isMyTurn) {
-            ui.turnText.textContent = "ตาของคุณ";
-        } else {
-            const turnPlayerName = roomData.players[currentTurnId]?.name || 'เพื่อน';
-            ui.turnText.textContent = `ตาของ ${turnPlayerName}`;
-        }
+        if (!currentTurn || turnOrder.length === 0) return turnOrder[0] || null;
+
+        const currentIndex = turnOrder.indexOf(currentTurn);
+        const nextIndex = (currentIndex + 1) % turnOrder.length;
+        return turnOrder[nextIndex];
     }
 
     // =================================================================
@@ -736,13 +725,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function displayGameOver(roomData) {
         showScreen('gameOver');
-        const winnerId = roomData.winner;
-        const isWinner = winnerId === currentPlayerId;
-        const winnerName = roomData.players[winnerId]?.name || 'ไม่มีผู้ชนะ';
+        const winnerPlayer = roomData.players[roomData.winner];
+        const isWinner = roomData.winner === currentPlayerId;
         
         screens.gameOver.className = `game-screen show ${isWinner ? 'win' : 'lose'}`;
         ui.gameOverTitle.textContent = isWinner ? "🎉 คุณชนะ! 🎉" : "จบเกมแล้ว";
-        ui.winnerName.textContent = `ผู้ชนะคือ: ${winnerName}`;
+        ui.winnerName.textContent = `ผู้ชนะคือ: ${winnerPlayer.name}`;
         ui.gameOverMessage.textContent = roomData.reason;
         
         ui.gameOverNumbersContainer.innerHTML = '';
@@ -784,4 +772,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        db.
+        db.ref().update(updates);
+    }
+
+    // =================================================================
+    // ======== INITIALIZATION ========
+    // =================================================================
+    setupInitialListeners();
+    showScreen('splash');
+});
