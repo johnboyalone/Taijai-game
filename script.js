@@ -432,12 +432,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateGameOverUI(roomData) {
-        if (roomData.rematch && roomData.rematch[currentPlayerId]) {
-            ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
-            ui.rematchBtn.disabled = true;
+        const myPlayerData = roomData.players[currentPlayerId];
+        if (myPlayerData && myPlayerData.connected) {
+            if (roomData.rematch && roomData.rematch[currentPlayerId]) {
+                ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
+                ui.rematchBtn.disabled = true;
+            } else {
+                ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
+                ui.rematchBtn.disabled = false;
+            }
         } else {
-            ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
-            ui.rematchBtn.disabled = false;
+            ui.rematchBtn.textContent = 'คุณไม่ได้เชื่อมต่อ';
+            ui.rematchBtn.disabled = true;
         }
     }
 
@@ -456,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
         createNumberPad();
         currentGuess = [];
         
-        const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId);
+        const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId && roomData.players[id].status === 'playing');
         currentTargetId = firstTarget;
 
         db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
@@ -688,6 +694,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentTurnIndex = activePlayers.indexOf(roomData.turn);
                 const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
                 roomData.turn = activePlayers[nextTurnIndex];
+                
+                if (currentTargetId === roomData.turn) {
+                    currentTargetId = activePlayers.find(id => id !== currentPlayerId && id !== currentTargetId) || null;
+                }
             }
             return roomData;
         }).then(() => {
