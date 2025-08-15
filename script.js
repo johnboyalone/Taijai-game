@@ -550,8 +550,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateGuessDisplay() {
         const guessInputs = ui.guessNumberContainer.children;
+        if (!guessInputs) return;
         for (let i = 0; i < GUESS_LENGTH; i++) {
-            guessInputs[i].textContent = currentGuess[i] || '';
+            if (guessInputs[i]) {
+                guessInputs[i].textContent = currentGuess[i] || '';
+            }
         }
     }
 
@@ -775,4 +778,10 @@ document.addEventListener('DOMContentLoaded', function() {
         Object.keys(roomData.players).forEach(playerId => {
             if (roomData.players[playerId].connected) {
                 updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
-                updates[`rooms/${currentRoom
+                updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
+                updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
+                updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
+            }
+        });
+
+        db.
