@@ -19,6 +19,7 @@ html, body {
     padding: 0;
     overflow: hidden;
     background-color: var(--bg-color);
+    box-sizing: border-box; /* เพิ่มเพื่อให้ padding-bottom ทำงานถูกต้อง */
 }
 
 body {
@@ -374,25 +375,25 @@ body {
     transform: translateX(-50%) translateY(0);
 }
 
-/* ======== MOBILE DEBUGGER STYLES ======== */
+/* ======== MOBILE DEBUGGER STYLES (แก้ไขแล้ว) ======== */
 #mobile-debugger {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    max-height: 25vh; /* สูงไม่เกิน 25% ของจอ */
+    height: 25vh; /* ⭐ แก้ไข: กำหนดความสูงคงที่ไปเลย */
     background-color: rgba(0, 0, 0, 0.8);
-    color: #00ff00; /* สีเขียวแบบคลาสสิก */
+    color: #00ff00;
     font-family: 'Courier New', Courier, monospace;
     font-size: 10px;
-    z-index: 9999; /* ให้อยู่บนสุดเสมอ */
-    overflow: hidden;
+    z-index: 9999;
     display: flex;
-    flex-direction: column-reverse; /* ให้ log ใหม่ขึ้นข้างบน */
+    flex-direction: column-reverse;
+    overflow: hidden;
 }
 
 #debugger-log {
-    overflow-y: auto; /* ทำให้เลื่อนดูได้ */
+    overflow-y: auto;
     padding: 5px;
 }
 
@@ -402,6 +403,11 @@ body {
 }
 
 #debugger-log .error {
-    color: #ff4d4d; /* Error เป็นสีแดง */
+    color: #ff4d4d;
     font-weight: bold;
+}
+
+/* ⭐ เพิ่ม: ทำให้ body เว้นที่ให้ debugger */
+body.debugging .game-screen.show {
+    height: 75vh; /* ⭐ ทำให้ Screen ที่แสดงอยู่สูงแค่ 75% */
 }
