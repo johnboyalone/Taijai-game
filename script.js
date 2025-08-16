@@ -1,375 +1,804 @@
-/* ======== GLOBAL STYLES & VARIABLES ======== */
-:root {
-    --bg-color: #f0f8ff;
-    --card-bg: #ffffff;
-    --primary-color: #89cff0;
-    --secondary-color: #f8c8dc;
-    --accent-color: #ffc107;
-    --danger-color: #ff6b6b;
-    --success-color: #4ade80;
-    --text-color: #5d5d5d;
-    --border-color: #e0e7ef;
-    --shadow-color: rgba(137, 207, 240, 0.2);
-    --font-family: 'Mitr', sans-serif;
+// =================================================================
+//                      AUDIO MANAGEMENT
+// =================================================================
+
+const sounds = {
+    click: new Audio('sounds/click.mp3'),
+    win: new Audio('sounds/win-wow.mp3'),
+    wrong: new Audio('sounds/wrong-answer.mp3'),
+    background: new Audio('sounds/background-music.mp3')
+};
+
+sounds.background.loop = true;
+sounds.background.volume = 0.3;
+sounds.click.volume = 0.7;
+
+function playSound(soundName) {
+    if (sounds[soundName]) {
+        sounds[soundName].currentTime = 0;
+        sounds[soundName].play().catch(error => console.log(`Error playing ${soundName}:`, error));
+    }
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: var(--bg-color);
+function controlBackgroundMusic(action) {
+    if (action === 'play') {
+        let playPromise = sounds.background.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Background music autoplay was prevented.", error);
+            });
+        }
+    } else if (action === 'stop') {
+        sounds.background.pause();
+        sounds.background.currentTime = 0;
+    }
 }
 
-body {
-    font-family: var(--font-family);
-    color: var(--text-color);
+// =================================================================
+//                      DOM ELEMENTS
+// =================================================================
+const screens = {
+    splash: document.getElementById('splash-screen'),
+    lobby: document.getElementById('lobby-screen'),
+    createRoom: document.getElementById('create-room-screen'),
+    roomList: document.getElementById('room-list-screen'),
+    joinerSetup: document.getElementById('joiner-setup-screen'),
+    waitingRoom: document.getElementById('waiting-room-screen'),
+    mainGame: document.getElementById('main-game-screen'),
+    gameOver: document.getElementById('game-over-screen'),
+};
+
+const goToCreateBtn = document.getElementById('go-to-create-btn');
+const goToJoinBtn = document.getElementById('go-to-join-btn');
+const hostNameInput = document.getElementById('host-name-input');
+const newRoomNameInput = document.getElementById('new-room-name-input');
+const newRoomPasswordInput = document.getElementById('new-room-password-input');
+const confirmCreateBtn = document.getElementById('confirm-create-btn');
+const roomListContent = document.getElementById('room-list-content');
+const joinerNameInput = document.getElementById('joiner-name-input');
+const confirmJoinBtn = document.getElementById('confirm-join-btn');
+const joinerRoomNameDisplay = document.getElementById('joiner-room-name-display');
+const waitingRoomTitle = document.querySelector('.waiting-room-title');
+const roomCodeText = document.getElementById('room-code-text');
+const playerSlots = [
+    document.getElementById('player1-slot'),
+    document.getElementById('player2-slot'),
+    document.getElementById('player3-slot'),
+    document.getElementById('player4-slot'),
+];
+const waitingMessage = document.getElementById('waiting-message');
+const startGameBtn = document.getElementById('start-game-btn');
+const ourNumberDisplay = document.getElementById('our-number-display');
+const playerSummaryGrid = document.getElementById('player-summary-grid');
+const historyLog = document.getElementById('history-log');
+const historyTargetName = document.getElementById('history-target-name');
+const guessNumberContainer = document.getElementById('guess-number-container');
+const numberPadContainer = document.getElementById('number-pad-container');
+const chanceDots = [
+    document.getElementById('chance-1'),
+    document.getElementById('chance-2'),
+    document.getElementById('chance-3'),
+];
+const submitFinalAnswerBtn = document.getElementById('submit-final-answer-btn');
+const turnIndicator = document.getElementById('turn-indicator');
+const turnText = document.getElementById('turn-text');
+const spectatorOverlay = document.getElementById('spectator-overlay');
+const spectatorMessage = document.getElementById('spectator-message');
+const gameOverTitle = document.getElementById('game-over-title');
+const winnerName = document.getElementById('winner-name');
+const gameOverMessage = document.getElementById('game-over-message');
+const gameOverNumbersContainer = document.getElementById('game-over-numbers-container');
+const rematchBtn = document.getElementById('rematch-btn');
+const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+const passwordModal = document.getElementById('password-modal');
+const passwordModalRoomName = document.getElementById('password-modal-room-name');
+const passwordModalInput = document.getElementById('password-modal-input');
+const passwordModalSubmitBtn = document.getElementById('password-modal-submit-btn');
+const toast = document.getElementById('toast');
+const actionToast = document.getElementById('action-toast');
+const actionToastText = document.getElementById('action-toast-text');
+
+
+// =================================================================
+//                      GLOBAL STATE
+// =================================================================
+let currentScreen = 'splash';
+let firebaseConfig;
+let db;
+let player = { id: null, name: null, isHost: false };
+let room = { id: null, name: null, password: null, hostId: null };
+let gameState = {};
+let currentGuess = [];
+let selectedTargetId = null;
+let roomListener = null;
+let roomsListener = null;
+let tempJoinData = { roomId: null, roomName: null };
+
+
+// =================================================================
+//                      SCREEN & UI MANAGEMENT
+// =================================================================
+function showScreen(screenName) {
+    Object.values(screens).forEach(screen => screen.classList.remove('show'));
+    if (screens[screenName]) {
+        screens[screenName].classList.add('show');
+        currentScreen = screenName;
+    }
 }
 
-/* ======== SCREEN MANAGEMENT ======== */
-.game-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-    z-index: 100;
-    overflow-y: auto;
-}
-.game-screen.show {
-    opacity: 1;
-    visibility: visible;
-    z-index: 101;
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
 }
 
-/* ======== SPLASH, LOBBY, CREATE & WAITING SCREENS ======== */
-#splash-screen, #lobby-screen, #create-room-screen, #joiner-setup-screen, #waiting-room-screen, #game-over-screen {
-    background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
-    justify-content: flex-start;
-    padding-top: 5vh;
+function showActionToast(message) {
+    actionToastText.textContent = message;
+    actionToast.classList.add('show');
+    setTimeout(() => {
+        actionToast.classList.remove('show');
+    }, 2500);
 }
 
-#splash-screen, #waiting-room-screen, #game-over-screen {
-    justify-content: center;
-    padding-top: 0;
+function showPasswordModal(roomId, roomName) {
+    tempJoinData = { roomId, roomName };
+    passwordModalRoomName.textContent = `ห้อง: ${roomName}`;
+    passwordModalInput.value = '';
+    passwordModal.classList.add('show');
 }
 
-.splash-content, .lobby-box, .waiting-room-container, .game-over-container {
-    background-color: var(--card-bg);
-    border-radius: 24px;
-    padding: clamp(20px, 5vw, 30px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-    box-sizing: border-box;
-}
-.lobby-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    max-width: 420px;
-}
-.lobby-title { font-size: 1.5rem; margin: 0 0 10px; }
-.lobby-description { margin: 0 0 20px; color: #718096; }
-.lobby-input {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    font-family: var(--font-family);
-    font-size: 1.1rem;
-    text-align: center;
-    box-sizing: border-box;
-    margin-bottom: 15px;
-}
-.lobby-button {
-    width: 100%;
-    padding: 14px;
-    font-family: var(--font-family);
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: white;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.lobby-button.secondary {
-    background-color: #a0aec0;
-}
-.lobby-button:disabled {
-    background-color: #cbd5e0;
-    cursor: not-allowed;
+function hidePasswordModal() {
+    passwordModal.classList.remove('show');
 }
 
-/* Splash Screen Specifics */
-.splash-title { font-size: 2.5rem; font-weight: 600; margin-bottom: 20px; }
-.instructions { text-align: left; padding: 0 15px; }
-.instructions h2 { text-align: center; }
-.instructions ol { padding-left: 25px; }
-.start-prompt { text-align: center; margin-top: 20px; color: #a0aec0; }
-
-/* Waiting Room Specifics */
-.waiting-room-title { margin-bottom: 15px; }
-.room-code-display { background-color: #edf2f7; padding: 10px; border-radius: 12px; margin-bottom: 20px; }
-.player-list { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 20px; }
-.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
-.player-avatar-initial {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #e2e8f0;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: 500;
-    flex-shrink: 0;
-}
-.player-name { flex-grow: 1; text-align: left; }
-.player-status { font-size: 0.9rem; padding: 4px 8px; border-radius: 8px; flex-shrink: 0; }
-.player-status.waiting { background-color: #fed7d7; color: #c53030; }
-.player-status.connected { background-color: #c6f6d5; color: #2f855a; }
-.waiting-message { color: #718096; }
-
-/* ======== ROOM LIST SCREEN ======== */
-#room-list-screen { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
-.room-list-container { width: 100%; max-width: 500px; background-color: var(--card-bg); border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
-.room-list-title { text-align: center; margin-top: 0; }
-#room-list-content { max-height: 60vh; overflow-y: auto; }
-.room-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; }
-.room-item:hover { background-color: #f7fafc; }
-.room-name { font-weight: 500; }
-.host-name { font-size: 0.9rem; color: #718096; }
-.room-status { font-weight: 500; color: var(--text-color); }
-.no-rooms-message { text-align: center; padding: 40px 20px; color: #a0aec0; }
-
-/* ======== MAIN GAME SCREEN ======== */
-#main-game-screen {
-    background-color: #e9f7ff;
-    padding-top: 50px; /* Space for turn indicator */
-    position: relative;
-}
-.main-container {
-    width: 100%;
-    max-width: 420px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.section {
-    background-color: var(--card-bg);
-    border-radius: 24px;
-    padding: 15px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-}
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin: 0 0 15px;
-    text-align: center;
-    color: #a0aec0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-.input-container {
-    display: flex;
-    justify-content: center;
-    gap: clamp(5px, 2vw, 10px);
-}
-.number-input {
-    width: clamp(40px, 15vw, 50px);
-    height: clamp(50px, 18vw, 60px);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: clamp(1.5rem, 6vw, 2rem);
-    font-weight: 500;
-    box-sizing: border-box;
-}
-#our-number-display .number-input { background-color: #e2e8f0; }
-#guess-number-container .number-input { background-color: #f7fafc; }
-
-/* Player Summary Grid */
-.player-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-}
-.player-summary-card {
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.player-summary-card.is-target {
-    border-color: var(--primary-color);
-    background-color: #e0f7ff;
-    transform: scale(1.05);
-}
-.player-summary-card.is-eliminated {
-    background-color: #f1f5f9;
-    color: #a0aec0;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-.summary-card-name { font-weight: 500; }
-.summary-card-status { font-size: 0.9rem; }
-
-/* History Log */
-.history-log {
-    max-height: 15vh;
-    overflow-y: auto;
-    padding: 0 10px;
-}
-.history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
-.history-guess { font-family: 'Courier New', Courier, monospace; font-size: 1.5rem; letter-spacing: 4px; }
-.history-clues { display: flex; gap: 5px; }
-.clue-box { padding: 5px 10px; border-radius: 8px; color: white; font-weight: 500; }
-.clue-strike { background-color: var(--success-color); }
-.clue-ball { background-color: var(--accent-color); }
-
-/* Number Pad */
-.number-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: clamp(8px, 2vw, 12px);
-    margin-top: 15px;
-}
-.number-cell {
-    aspect-ratio: 1.2 / 1;
-    border-radius: 16px;
-    background-color: #f8fafc;
-    border: 1px solid var(--border-color);
-    font-size: clamp(1.2rem, 5vw, 1.5rem);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
-}
-.number-cell.special { background-color: #fee2e2; color: #ef4444; }
-
-/* Final Answer Section */
-.final-answer-section {
-    margin-top: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fffbeb;
-    padding: 10px 20px;
-    border-radius: 20px;
-}
-.final-answer-chances { display: flex; align-items: center; gap: 8px; }
-.chance-dot { width: 12px; height: 12px; border-radius: 50%; background-color: var(--success-color); transition: background-color 0.3s; }
-.chance-dot.used { background-color: #e2e8f0; }
-.final-answer-button { padding: 10px 20px; background-color: var(--danger-color); color: white; border: none; border-radius: 12px; font-family: var(--font-family); font-size: 1rem; }
-
-/* Turn Indicator */
-#turn-indicator {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-    color: white;
-    font-weight: 500;
-    transition: background-color 0.5s;
-    z-index: 102;
-    box-sizing: border-box;
-}
-#turn-indicator.my-turn { background-color: var(--success-color); }
-#turn-indicator.their-turn { background-color: #a0aec0; }
-
-/* Spectator Overlay */
-.spectator-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 103;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s;
-}
-.spectator-overlay.show {
-    opacity: 1;
-    visibility: visible;
-}
-.spectator-message {
-    font-size: 1.5rem;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 16px;
+// =================================================================
+//                      FIREBASE SETUP & UTILS
+// =================================================================
+async function initializeFirebase() {
+    // **สำคัญ:** กรุณาใส่ Firebase Config ของคุณที่นี่
+    firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
 }
 
-/* ======== GAME OVER SCREEN ======== */
-#game-over-screen { background: linear-gradient(135deg, #89f7fe, #66a6ff); transition: background 2s ease; }
-#game-over-screen.win { background: linear-gradient(135deg, #a8e063, #56ab2f); }
-#game-over-screen.lose { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
-.game-over-container { background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
-.game-over-title { font-size: clamp(2.5rem, 10vw, 3.5rem); color: white; margin: 0 0 10px; text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); font-weight: 600; }
-.winner-name { font-size: 1.5rem; color: rgba(255, 255, 255, 0.95); margin: -10px 0 20px 0; font-weight: 500; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
-.game-over-message { font-size: 1.1rem; color: rgba(255,255,255,0.9); margin: 0 0 25px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
-.game-over-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 30px; width: 100%; }
-.final-number-box { text-align: center; color: white; background-color: rgba(0,0,0,0.15); padding: 10px; border-radius: 16px; }
-.final-number-box-title { font-size: 0.9rem; opacity: 0.8; }
-.final-number-display { font-family: 'Courier New', Courier, monospace; font-size: 1.8rem; letter-spacing: 4px; margin-top: 5px; }
-.game-over-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; }
 
-/* ======== MODALS & TOASTS ======== */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; z-index: 200; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
-.modal-overlay.show { opacity: 1; visibility: visible; }
-.modal-content { background-color: var(--card-bg); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s; text-align: center; }
-.modal-overlay.show .modal-content { transform: scale(1); }
-.modal-title { margin-top: 0; }
-.toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: var(--danger-color); color: white; padding: 12px 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1001; font-size: 1rem; opacity: 0; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-.toast-notification.show { opacity: 1; bottom: 30px; }
+// =================================================================
+//                      LOBBY & ROOM SETUP
+// =================================================================
 
-/* Action Toast */
-.action-toast {
-    position: fixed;
-    top: 60px; /* Below turn indicator */
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    z-index: 102;
-    font-size: 1rem;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.4s ease;
+async function handleCreateRoom() {
+    playSound('click');
+    const hostName = hostNameInput.value.trim();
+    const roomName = newRoomNameInput.value.trim();
+    const password = newRoomPasswordInput.value.trim();
+
+    if (!hostName || !roomName) {
+        return showToast('กรุณากรอกชื่อของคุณและชื่อห้อง');
+    }
+    if (password && (password.length !== 4 || !/^\d{4}$/.test(password))) {
+        return showToast('รหัสผ่านต้องเป็นตัวเลข 4 หลักเท่านั้น');
+    }
+
+    player.name = hostName;
+    player.isHost = true;
+
+    const newRoomRef = db.ref('rooms').push();
+    room.id = newRoomRef.key;
+    room.name = roomName;
+    room.password = password;
+    room.hostId = player.id;
+
+    const newPlayerRef = db.ref(`rooms/${room.id}/players`).push();
+    player.id = newPlayerRef.key;
+    room.hostId = player.id;
+
+    await newRoomRef.set({
+        name: room.name,
+        password: room.password,
+        hostName: player.name,
+        hostId: player.id,
+        status: 'waiting',
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    await newPlayerRef.set({
+        name: player.name,
+        isHost: true,
+        status: 'connected',
+        number: '',
+        chances: 3,
+        isEliminated: false
+    });
+
+    listenForRoomUpdates();
+    showScreen('waitingRoom');
 }
-.action-toast.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(0);
+
+function listenForRooms() {
+    if (roomsListener) roomsListener.off();
+    const roomsRef = db.ref('rooms').orderByChild('createdAt').limitToLast(20);
+    roomsListener = roomsRef.on('value', snapshot => {
+        roomListContent.innerHTML = '';
+        if (snapshot.exists()) {
+            const rooms = snapshot.val();
+            let hasWaitingRooms = false;
+            Object.entries(rooms).forEach(([roomId, roomData]) => {
+                if (roomData.status === 'waiting') {
+                    hasWaitingRooms = true;
+                    const playerCount = roomData.players ? Object.keys(roomData.players).length : 0;
+                    const roomItem = document.createElement('div');
+                    roomItem.className = 'room-item';
+                    roomItem.innerHTML = `
+                        <div>
+                            <p class="room-name">${roomData.name}</p>
+                            <p class="host-name">สร้างโดย: ${roomData.hostName}</p>
+                        </div>
+                        <span class="room-status">${playerCount}/4</span>
+                    `;
+                    roomItem.addEventListener('click', () => {
+                        playSound('click');
+                        if (playerCount >= 4) {
+                            return showToast('ห้องนี้เต็มแล้ว');
+                        }
+                        if (roomData.password) {
+                            showPasswordModal(roomId, roomData.name);
+                        } else {
+                            tempJoinData = { roomId, roomName: roomData.name };
+                            showScreen('joinerSetup');
+                            joinerRoomNameDisplay.textContent = tempJoinData.roomName;
+                        }
+                    });
+                    roomListContent.appendChild(roomItem);
+                }
+            });
+            if (!hasWaitingRooms) {
+                roomListContent.innerHTML = '<p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p>';
+            }
+        } else {
+            roomListContent.innerHTML = '<p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p>';
+        }
+    });
 }
+
+function handlePasswordSubmit() {
+    playSound('click');
+    const password = passwordModalInput.value;
+    db.ref(`rooms/${tempJoinData.roomId}/password`).once('value', snapshot => {
+        if (snapshot.val() === password) {
+            hidePasswordModal();
+            showScreen('joinerSetup');
+            joinerRoomNameDisplay.textContent = tempJoinData.roomName;
+        } else {
+            showToast('รหัสผ่านไม่ถูกต้อง');
+        }
+    });
+}
+
+async function handleConfirmJoin() {
+    playSound('click');
+    const joinerName = joinerNameInput.value.trim();
+    if (!joinerName) {
+        return showToast('กรุณากรอกชื่อของคุณ');
+    }
+
+    player.name = joinerName;
+    player.isHost = false;
+    room.id = tempJoinData.roomId;
+
+    const newPlayerRef = db.ref(`rooms/${room.id}/players`).push();
+    player.id = newPlayerRef.key;
+
+    await newPlayerRef.set({
+        name: player.name,
+        isHost: false,
+        status: 'connected',
+        number: '',
+        chances: 3,
+        isEliminated: false
+    });
+
+    listenForRoomUpdates();
+    showScreen('waitingRoom');
+}
+
+// =================================================================
+//                      WAITING ROOM
+// =================================================================
+function listenForRoomUpdates() {
+    if (roomListener) roomListener.off();
+    const roomRef = db.ref(`rooms/${room.id}`);
+    roomListener = roomRef.on('value', snapshot => {
+        if (!snapshot.exists()) {
+            handleRoomClosed();
+            return;
+        }
+        const roomData = snapshot.val();
+        gameState = roomData;
+        updateWaitingRoomUI(roomData);
+
+        if (roomData.status === 'playing' && currentScreen !== 'mainGame') {
+            showScreen('mainGame');
+            initializeGameUI();
+        } else if (roomData.status === 'finished' && currentScreen !== 'gameOver') {
+            showGameOverScreen(roomData);
+        }
+    });
+}
+
+function updateWaitingRoomUI(roomData) {
+    roomCodeText.textContent = roomData.name;
+    const players = roomData.players || {};
+    const playerIds = Object.keys(players);
+
+    playerSlots.forEach((slot, index) => {
+        const nameSpan = slot.querySelector('.player-name');
+        const statusSpan = slot.querySelector('.player-status');
+        const avatar = slot.querySelector('.player-avatar-initial');
+
+        if (playerIds[index]) {
+            const p = players[playerIds[index]];
+            nameSpan.textContent = p.name;
+            statusSpan.textContent = 'เชื่อมต่อแล้ว';
+            statusSpan.className = 'player-status connected';
+            avatar.textContent = p.name.charAt(0).toUpperCase();
+            avatar.style.backgroundColor = getAvatarColor(playerIds[index]);
+        } else {
+            nameSpan.textContent = `ผู้เล่น ${index + 1}`;
+            statusSpan.textContent = 'กำลังรอ...';
+            statusSpan.className = 'player-status waiting';
+            avatar.textContent = '?';
+            avatar.style.backgroundColor = '#e2e8f0';
+        }
+    });
+
+    if (player.isHost) {
+        const playerCount = playerIds.length;
+        if (playerCount >= 2 && playerCount <= 4) {
+            startGameBtn.disabled = false;
+            waitingMessage.textContent = 'พร้อมแล้วเริ่มเกมได้เลย!';
+        } else {
+            startGameBtn.disabled = true;
+            waitingMessage.textContent = 'ต้องมีผู้เล่น 2-4 คนเพื่อเริ่มเกม';
+        }
+    } else {
+        startGameBtn.style.display = 'none';
+        waitingMessage.textContent = 'รอหัวหน้าห้องเริ่มเกม...';
+    }
+}
+
+function getAvatarColor(playerId) {
+    const colors = ['#f87171', '#60a5fa', '#facc15', '#4ade80', '#a78bfa', '#fb923c'];
+    let hash = 0;
+    for (let i = 0; i < playerId.length; i++) {
+        hash = playerId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+function handleRoomClosed() {
+    if (roomListener) roomListener.off();
+    showToast("ห้องถูกปิดโดยหัวหน้าห้อง");
+    resetToLobby();
+}
+
+
+// =================================================================
+//                      GAME LOGIC
+// =================================================================
+function startGame() {
+    const playerIds = Object.keys(gameState.players);
+    const updates = {};
+    updates[`/status`] = 'playing';
+    updates[`/turnOrder`] = shuffleArray(playerIds);
+    updates[`/currentTurnIndex`] = 0;
+    updates[`/history`] = {};
+
+    playerIds.forEach(pid => {
+        updates[`/players/${pid}/number`] = generateSecretNumber();
+        updates[`/players/${pid}/chances`] = 3;
+        updates[`/players/${pid}/isEliminated`] = false;
+    });
+
+    db.ref(`rooms/${room.id}`).update(updates);
+}
+
+function generateSecretNumber() {
+    const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    let number = '';
+    for (let i = 0; i < 4; i++) {
+        const randomIndex = Math.floor(Math.random() * digits.length);
+        number += digits.splice(randomIndex, 1)[0];
+    }
+    return number;
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function initializeGameUI() {
+    createNumberPad();
+    updateGameUI();
+}
+
+function updateGameUI() {
+    if (!gameState || !gameState.players || !gameState.players[player.id]) return;
+
+    const myData = gameState.players[player.id];
+    
+    if (myData.isEliminated) {
+        spectatorOverlay.classList.add('show');
+        spectatorMessage.textContent = `คุณแพ้แล้ว! กำลังรับชม...`;
+    } else {
+        spectatorOverlay.classList.remove('show');
+    }
+
+    ourNumberDisplay.innerHTML = myData.number.split('').map(n => `<div class="number-input">${n}</div>`).join('');
+
+    playerSummaryGrid.innerHTML = '';
+    Object.entries(gameState.players).forEach(([pid, pdata]) => {
+        if (pid === player.id) return;
+        const card = document.createElement('div');
+        card.className = 'player-summary-card';
+        card.dataset.playerId = pid;
+        card.innerHTML = `<div class="summary-card-name">${pdata.name}</div><div class="summary-card-status">${pdata.isEliminated ? 'แพ้แล้ว' : 'ยังอยู่'}</div>`;
+        
+        if (pdata.isEliminated) {
+            card.classList.add('is-eliminated');
+        } else {
+            card.addEventListener('click', () => {
+                if (myData.isEliminated) return;
+                playSound('click');
+                selectedTargetId = pid;
+                updateGameUI();
+            });
+        }
+
+        if (pid === selectedTargetId) {
+            card.classList.add('is-target');
+        }
+        playerSummaryGrid.appendChild(card);
+    });
+    
+    if (!selectedTargetId || gameState.players[selectedTargetId]?.isEliminated) {
+        const firstAvailableTarget = Object.keys(gameState.players).find(pid => pid !== player.id && !gameState.players[pid].isEliminated);
+        selectedTargetId = firstAvailableTarget || null;
+    }
+
+    updateHistoryLog();
+
+    for (let i = 0; i < 3; i++) {
+        chanceDots[i].classList.toggle('used', i >= myData.chances);
+    }
+
+    const currentTurnPlayerId = gameState.turnOrder[gameState.currentTurnIndex];
+    const isMyTurn = currentTurnPlayerId === player.id && !myData.isEliminated;
+    
+    if (isMyTurn) {
+        turnIndicator.className = 'turn-indicator my-turn';
+        turnText.textContent = 'ตาของคุณ';
+    } else {
+        turnIndicator.className = 'turn-indicator their-turn';
+        const currentTurnPlayerName = gameState.players[currentTurnPlayerId]?.name || 'ผู้เล่น';
+        turnText.textContent = `ตากำลังเล่นของ: ${currentTurnPlayerName}`;
+    }
+    
+    const controlsDisabled = !isMyTurn || !selectedTargetId;
+    submitFinalAnswerBtn.disabled = controlsDisabled;
+    numberPadContainer.style.pointerEvents = controlsDisabled ? 'none' : 'auto';
+    numberPadContainer.style.opacity = controlsDisabled ? 0.6 : 1;
+}
+
+function createNumberPad() {
+    numberPadContainer.innerHTML = '';
+    const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'];
+    numbers.forEach(num => {
+        const cell = document.createElement('div');
+        cell.className = 'number-cell';
+        cell.textContent = num;
+        if (num === 'C' || num === '⌫') {
+            cell.classList.add('special');
+        }
+        cell.addEventListener('click', () => handleNumberPadClick(num));
+        numberPadContainer.appendChild(cell);
+    });
+}
+
+function handleNumberPadClick(num) {
+    playSound('click');
+    if (num === 'C') {
+        currentGuess = [];
+    } else if (num === '⌫') {
+        currentGuess.pop();
+    } else if (currentGuess.length < 4) {
+        currentGuess.push(num);
+    }
+    updateGuessDisplay();
+}
+
+function updateGuessDisplay() {
+    const inputs = guessNumberContainer.querySelectorAll('.number-input');
+    inputs.forEach((input, index) => {
+        input.textContent = currentGuess[index] || '';
+    });
+}
+
+function updateHistoryLog() {
+    historyLog.innerHTML = '';
+    if (!selectedTargetId) {
+        historyTargetName.textContent = 'เลือกเป้าหมาย';
+        historyLog.innerHTML = '<p>เลือกผู้เล่นเพื่อดูประวัติการทาย</p>';
+        return;
+    }
+
+    historyTargetName.textContent = gameState.players[selectedTargetId].name;
+    const targetHistory = gameState.history?.[selectedTargetId] || [];
+
+    if (targetHistory.length === 0) {
+        historyLog.innerHTML = '<p>ยังไม่มีการทายผู้เล่นคนนี้</p>';
+        return;
+    }
+
+    targetHistory.forEach(item => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.innerHTML = `
+            <span class="history-guess">${item.guess}</span>
+            <div class="history-clues">
+                <div class="clue-box clue-strike">${item.strikes}S</div>
+                <div class="clue-box clue-ball">${item.balls}B</div>
+            </div>
+        `;
+        historyLog.appendChild(historyItem);
+    });
+    historyLog.scrollTop = historyLog.scrollHeight;
+}
+
+function handleSubmitFinalAnswer() {
+    playSound('click');
+    if (currentGuess.length !== 4) {
+        return showToast('กรุณากรอกเลขให้ครบ 4 หลัก');
+    }
+    const guess = currentGuess.join('');
+    const targetNumber = gameState.players[selectedTargetId].number;
+
+    if (guess === targetNumber) {
+        showActionToast(`คุณกำจัด ${gameState.players[selectedTargetId].name} สำเร็จ!`);
+        db.ref(`rooms/${room.id}/players/${selectedTargetId}/isEliminated`).set(true);
+        checkWinCondition();
+    } else {
+        playSound('wrong');
+        const myChances = gameState.players[player.id].chances - 1;
+        db.ref(`rooms/${room.id}/players/${player.id}/chances`).set(myChances);
+        showActionToast(`คำตอบผิด! คุณเสีย 1 โอกาส`);
+        if (myChances <= 0) {
+            db.ref(`rooms/${room.id}/players/${player.id}/isEliminated`).set(true);
+            checkWinCondition();
+        }
+    }
+    addGuessToHistory(guess);
+    moveToNextTurn();
+}
+
+function addGuessToHistory(guess) {
+    const targetNumber = gameState.players[selectedTargetId].number;
+    let strikes = 0;
+    let balls = 0;
+    for (let i = 0; i < 4; i++) {
+        if (guess[i] === targetNumber[i]) {
+            strikes++;
+        } else if (targetNumber.includes(guess[i])) {
+            balls++;
+        }
+    }
+
+    const historyRef = db.ref(`rooms/${room.id}/history/${selectedTargetId}`);
+    historyRef.push({
+        guess,
+        strikes,
+        balls,
+        guesserId: player.id,
+        guesserName: player.name
+    });
+}
+
+function moveToNextTurn() {
+    let nextIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+    let loopCount = 0;
+    while (gameState.players[gameState.turnOrder[nextIndex]].isEliminated) {
+        nextIndex = (nextIndex + 1) % gameState.turnOrder.length;
+        loopCount++;
+        if (loopCount > gameState.turnOrder.length) {
+            return;
+        }
+    }
+    db.ref(`rooms/${room.id}/currentTurnIndex`).set(nextIndex);
+    currentGuess = [];
+    updateGuessDisplay();
+}
+
+function checkWinCondition() {
+    db.ref(`rooms/${room.id}/players`).once('value', (snapshot) => {
+        const currentPlayers = snapshot.val();
+        const activePlayers = Object.values(currentPlayers).filter(p => !p.isEliminated);
+        
+        if (activePlayers.length <= 1) {
+            const winner = activePlayers.length === 1 ? activePlayers[0] : null;
+            const winnerId = winner ? Object.keys(currentPlayers).find(pid => currentPlayers[pid].name === winner.name) : null;
+            
+            const updates = {
+                status: 'finished',
+                winnerId: winnerId,
+                winnerName: winner ? winner.name : 'ไม่มีผู้ชนะ'
+            };
+            db.ref(`rooms/${room.id}`).update(updates);
+        }
+    });
+}
+
+
+// =================================================================
+//                      GAME OVER & RESET
+// =================================================================
+function showGameOverScreen(roomData) {
+    controlBackgroundMusic('stop');
+    const isWinner = roomData.winnerId === player.id;
+
+    if (isWinner) {
+        playSound('win');
+        gameOverTitle.textContent = "คุณชนะ!";
+        winnerName.textContent = player.name;
+        gameOverMessage.textContent = "คุณคือผู้รอดชีวิตคนสุดท้าย!";
+        screens.gameOver.className = 'game-screen show win';
+    } else {
+        gameOverTitle.textContent = "จบเกม";
+        winnerName.textContent = `ผู้ชนะคือ ${roomData.winnerName}`;
+        gameOverMessage.textContent = "พยายามได้ดีมาก! ไว้ลองใหม่นะ";
+        screens.gameOver.className = 'game-screen show lose';
+    }
+
+    gameOverNumbersContainer.innerHTML = '';
+    Object.values(roomData.players).forEach(p => {
+        const numberBox = document.createElement('div');
+        numberBox.className = 'final-number-box';
+        numberBox.innerHTML = `
+            <div class="final-number-box-title">${p.name}</div>
+            <div class="final-number-display">${p.number}</div>
+        `;
+        gameOverNumbersContainer.appendChild(numberBox);
+    });
+
+    showScreen('gameOver');
+}
+
+function handleRematch() {
+    playSound('click');
+    if (player.isHost) {
+        const updates = {};
+        updates['/status'] = 'waiting';
+        updates['/history'] = null;
+        updates['/turnOrder'] = null;
+        updates['/currentTurnIndex'] = null;
+        updates['/winnerId'] = null;
+        updates['/winnerName'] = null;
+        Object.keys(gameState.players).forEach(pid => {
+            updates[`/players/${pid}/number`] = '';
+            updates[`/players/${pid}/chances`] = 3;
+            updates[`/players/${pid}/isEliminated`] = false;
+        });
+        db.ref(`rooms/${room.id}`).update(updates);
+        
+        showScreen('waitingRoom');
+        controlBackgroundMusic('play');
+
+    } else {
+        showToast('รอหัวหน้าห้องเพื่อเริ่มเกมใหม่...');
+    }
+}
+
+function resetToLobby() {
+    playSound('click');
+    if (roomListener) roomListener.off();
+    if (roomsListener) roomsListener.off();
+    
+    if (player.isHost && room.id) {
+        db.ref(`rooms/${room.id}`).remove();
+    } else if (room.id && player.id) {
+        db.ref(`rooms/${room.id}/players/${player.id}`).remove();
+    }
+
+    player = { id: null, name: null, isHost: false };
+    room = { id: null, name: null, password: null, hostId: null };
+    gameState = {};
+    currentGuess = [];
+    selectedTargetId = null;
+    
+    hostNameInput.value = '';
+    newRoomNameInput.value = '';
+    newRoomPasswordInput.value = '';
+    joinerNameInput.value = '';
+    startGameBtn.style.display = 'block';
+    startGameBtn.disabled = true;
+
+    showScreen('lobby');
+    controlBackgroundMusic('play');
+}
+
+
+// =================================================================
+//                      INITIALIZATION (ฉบับแก้ไขที่ถูกต้อง)
+// =================================================================
+
+function setupAllEventListeners() {
+    // Listener ที่ไม่ต้องรอ Firebase
+    screens.splash.addEventListener('click', () => {
+        playSound('click');
+        showScreen('lobby');
+        controlBackgroundMusic('play');
+    }, { once: true });
+
+    goToCreateBtn.addEventListener('click', () => {
+        playSound('click');
+        showScreen('createRoom');
+    });
+
+    // Listener ที่ต้องรอ Firebase (จะถูกเรียกใช้หลังจาก Firebase โหลดเสร็จ)
+    goToJoinBtn.addEventListener('click', () => {
+        playSound('click');
+        showScreen('roomList');
+        listenForRooms();
+    });
+
+    confirmCreateBtn.addEventListener('click', handleCreateRoom);
+    confirmJoinBtn.addEventListener('click', handleConfirmJoin);
+    passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
+    startGameBtn.addEventListener('click', () => {
+        playSound('click');
+        if (player.isHost) startGame();
+    });
+    submitFinalAnswerBtn.addEventListener('click', handleSubmitFinalAnswer);
+    rematchBtn.addEventListener('click', handleRematch);
+    backToLobbyBtn.addEventListener('click', resetToLobby);
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. โหลด Firebase ก่อนเป็นอันดับแรก
+    initializeFirebase().then(() => {
+        // 2. เมื่อ Firebase โหลดสำเร็จแล้ว ค่อยตั้งค่า Event Listener ทั้งหมด
+        console.log("Firebase initialized successfully. Setting up listeners.");
+        setupAllEventListeners();
+        
+        // 3. แสดงหน้าจอแรก
+        showScreen('splash');
+
+    }).catch(error => {
+        console.error("Firebase initialization failed:", error);
+        showToast("การเชื่อมต่อเซิร์ฟเวอร์ล้มเหลว โปรดลองอีกครั้ง");
+        
+        // ถึงแม้จะเชื่อมต่อไม่ได้ ก็ยังต้องตั้งค่า Listener พื้นฐานและแสดงหน้าจอแรก
+        screens.splash.addEventListener('click', () => {
+            playSound('click');
+            showScreen('lobby');
+        }, { once: true });
+        goToCreateBtn.addEventListener('click', () => {
+            playSound('click');
+            showScreen('createRoom');
+        });
+        showScreen('splash');
+    });
+});
