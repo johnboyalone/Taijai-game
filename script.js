@@ -154,9 +154,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isError) {
             logEntry.className = 'error';
         }
-        debuggerLog.prepend(logEntry); // prepend เพื่อให้ข้อความใหม่ขึ้นบนสุด
+        debuggerLog.prepend(logEntry);
     }
     // ⭐⭐⭐ END: DEBUGGER FUNCTION ⭐⭐⭐
+
+    // ⭐⭐⭐ START: DEBUGGER TOGGLE LOGIC ⭐⭐⭐
+    const debuggerContainer = document.getElementById('mobile-debugger');
+    const toggleBtn = document.getElementById('toggle-debugger-btn');
+
+    toggleBtn.addEventListener('click', () => {
+        debuggerContainer.classList.toggle('collapsed');
+    });
+    // ⭐⭐⭐ END: DEBUGGER TOGGLE LOGIC ⭐⭐⭐
+
 
     // =================================================================
     // ======== CORE APP FLOW & SCREEN MANAGEMENT ========
@@ -614,10 +624,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const opponent = roomData.players[currentTargetId];
                 const me = roomData.players[currentPlayerId];
                 
-                // Check for duplicate guess inside transaction
                 const history = roomData.players[currentPlayerId].guesses?.[currentTargetId] || [];
                 if (Object.values(history).some(item => item.guess === guessString)) {
-                    return; // Abort transaction
+                    return; 
                 }
 
                 const clues = calculateClues(currentGuess, opponent.number.split(''));
@@ -831,7 +840,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (player.status !== 'eliminated') {
                     playSound(sounds.click);
                     currentTargetId = player.id;
-                    // This will be re-rendered by the main listener, but do it locally for responsiveness
                     document.querySelectorAll('.player-summary-card').forEach(c => c.classList.remove('is-target'));
                     playerBox.classList.add('is-target');
                     updateHistoryLog(roomData);
@@ -846,7 +854,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
 
     function displayGameOver(roomData) {
-        stopBGM(); // หยุดเพลงก่อน
+        stopBGM(); 
 
         const winner = roomData.players[roomData.winner];
         const isWinner = roomData.winner === currentPlayerId;
