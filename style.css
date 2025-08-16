@@ -373,3 +373,35 @@ body {
     visibility: visible;
     transform: translateX(-50%) translateY(0);
 }
+
+/* ======== MOBILE DEBUGGER STYLES ======== */
+#mobile-debugger {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 25vh; /* สูงไม่เกิน 25% ของจอ */
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #00ff00; /* สีเขียวแบบคลาสสิก */
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    z-index: 9999; /* ให้อยู่บนสุดเสมอ */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column-reverse; /* ให้ log ใหม่ขึ้นข้างบน */
+}
+
+#debugger-log {
+    overflow-y: auto; /* ทำให้เลื่อนดูได้ */
+    padding: 5px;
+}
+
+#debugger-log div {
+    padding: 2px 0;
+    border-bottom: 1px solid #333;
+}
+
+#debugger-log .error {
+    color: #ff4d4d; /* Error เป็นสีแดง */
+    font-weight: bold;
+}
