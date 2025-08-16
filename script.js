@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ======== AUDIO ASSETS ========
 let sounds = {};
 let soundsInitialized = false;
+let bgm;
 
 function initializeSounds() {
     if (soundsInitialized) return;
@@ -29,6 +30,11 @@ function initializeSounds() {
         wrongAnswer: new Audio('sounds/wrong-answer.mp3'),
         win: new Audio('sounds/win-wow.mp3')
     };
+bgm = new Audio('sounds/background-music.mp3'); 
+    bgm.loop = true;
+    bgm.volume = 0.3;
+    // ...
+}
 
     // ตั้งค่าคุณสมบัติต่างๆ
     sounds.click.volume = 0.8;
@@ -38,9 +44,9 @@ function initializeSounds() {
     Object.values(sounds).forEach(sound => {
         sound.load(); // คำสั่งให้เริ่มโหลด
     });
-
+bgm.load();
     soundsInitialized = true;
-    console.log("Sounds are ready to be played.");
+    console.log("Sounds and BGM are ready to be played.");
 }
 
 function playSound(sound) {
