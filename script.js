@@ -9,12 +9,10 @@ const sounds = {
     background: new Audio('sounds/background-music.mp3')
 };
 
-// ตั้งค่าเสียง
 sounds.background.loop = true;
 sounds.background.volume = 0.3;
 sounds.click.volume = 0.7;
 
-// ฟังก์ชันกลางสำหรับเล่นเสียงสั้นๆ
 function playSound(soundName) {
     if (sounds[soundName]) {
         sounds[soundName].currentTime = 0;
@@ -22,10 +20,8 @@ function playSound(soundName) {
     }
 }
 
-// ฟังก์ชันควบคุมเพลงประกอบ
 function controlBackgroundMusic(action) {
     if (action === 'play') {
-        // การเล่นเสียงต้องเริ่มหลังจากการกระทำของผู้ใช้
         let playPromise = sounds.background.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
@@ -161,6 +157,7 @@ function hidePasswordModal() {
 //                      FIREBASE SETUP & UTILS
 // =================================================================
 async function initializeFirebase() {
+    // **สำคัญ:** กรุณาตรวจสอบว่า Config ของคุณถูกต้อง
     firebaseConfig = {
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_AUTH_DOMAIN",
@@ -743,7 +740,7 @@ function resetToLobby() {
 
 
 // =================================================================
-//                      INITIALIZATION (ฉบับแก้ไข)
+//                      INITIALIZATION
 // =================================================================
 function setupAllListeners() {
     // Splash Screen
@@ -785,16 +782,15 @@ function setupAllListeners() {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('splash-screen')) {
-        // 1. ตั้งค่า Event Listeners ทั้งหมดทันที
         setupAllListeners();
 
-        // 2. โหลด Firebase ในพื้นหลัง
         initializeFirebase().catch(error => {
             console.error("Firebase initialization failed:", error);
-            document.body.innerHTML = '<h1>เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์</h1>';
+            // **โค้ดเจ้าปัญหาถูกลบออกจากตรงนี้แล้ว**
+            // เราจะแค่แสดงข้อผิดพลาดใน Console แต่ไม่ทำลายหน้าเว็บ
+            showToast("การเชื่อมต่อเซิร์ฟเวอร์ล้มเหลว");
         });
 
-        // 3. แสดงหน้าจอแรก
         showScreen('splash');
     }
 });
