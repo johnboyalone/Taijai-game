@@ -1,3 +1,4 @@
+alert 
 document.addEventListener('DOMContentLoaded', function() {
     
     // =================================================================
