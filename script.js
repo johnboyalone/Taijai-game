@@ -157,7 +157,6 @@ function hidePasswordModal() {
 //                      FIREBASE SETUP & UTILS
 // =================================================================
 async function initializeFirebase() {
-    // **สำคัญ:** กรุณาตรวจสอบว่า Config ของคุณถูกต้อง
     firebaseConfig = {
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_AUTH_DOMAIN",
@@ -740,57 +739,45 @@ function resetToLobby() {
 
 
 // =================================================================
-//                      INITIALIZATION
+//                      INITIALIZATION (ฉบับแก้ไขล่าสุด)
 // =================================================================
-function setupAllListeners() {
-    // Splash Screen
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. ตั้งค่า Listener ที่ไม่ต้องการ Firebase ทันที
     screens.splash.addEventListener('click', () => {
         playSound('click');
         showScreen('lobby');
         controlBackgroundMusic('play');
     }, { once: true });
 
-    // Lobby Screen
     goToCreateBtn.addEventListener('click', () => {
         playSound('click');
         showScreen('createRoom');
     });
-    goToJoinBtn.addEventListener('click', () => {
-        playSound('click');
-        showScreen('roomList');
-        listenForRooms();
-    });
 
-    // Create/Join Logic
-    confirmCreateBtn.addEventListener('click', handleCreateRoom);
-    confirmJoinBtn.addEventListener('click', handleConfirmJoin);
-    passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
-
-    // Waiting Room
-    startGameBtn.addEventListener('click', () => {
-        playSound('click');
-        if (player.isHost) startGame();
-    });
-
-    // Main Game
-    submitFinalAnswerBtn.addEventListener('click', handleSubmitFinalAnswer);
-
-    // Game Over
-    rematchBtn.addEventListener('click', handleRematch);
-    backToLobbyBtn.addEventListener('click', resetToLobby);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('splash-screen')) {
-        setupAllListeners();
-
-        initializeFirebase().catch(error => {
-            console.error("Firebase initialization failed:", error);
-            // **โค้ดเจ้าปัญหาถูกลบออกจากตรงนี้แล้ว**
-            // เราจะแค่แสดงข้อผิดพลาดใน Console แต่ไม่ทำลายหน้าเว็บ
-            showToast("การเชื่อมต่อเซิร์ฟเวอร์ล้มเหลว");
+    // 2. โหลด Firebase
+    initializeFirebase().then(() => {
+        // 3. เมื่อ Firebase พร้อมแล้ว ให้ตั้งค่า Listener ที่เหลือ
+        goToJoinBtn.addEventListener('click', () => {
+            playSound('click');
+            showScreen('roomList');
+            listenForRooms();
         });
+        confirmCreateBtn.addEventListener('click', handleCreateRoom);
+        confirmJoinBtn.addEventListener('click', handleConfirmJoin);
+        passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
+        startGameBtn.addEventListener('click', () => {
+            playSound('click');
+            if (player.isHost) startGame();
+        });
+        submitFinalAnswerBtn.addEventListener('click', handleSubmitFinalAnswer);
+        rematchBtn.addEventListener('click', handleRematch);
+        backToLobbyBtn.addEventListener('click', resetToLobby);
 
-        showScreen('splash');
-    }
+    }).catch(error => {
+        console.error("Firebase initialization failed:", error);
+        showToast("การเชื่อมต่อเซิร์ฟเวอร์ล้มเหลว โปรดลองอีกครั้ง");
+    });
+
+    // 4. แสดงหน้าจอแรก
+    showScreen('splash');
 });
