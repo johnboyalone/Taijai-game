@@ -22,9 +22,9 @@ let soundsInitialized = false; // สร้างตัวแปรเพื่�
 function initializeSounds() {
     if (soundsInitialized) return; // ถ้าโหลดแล้ว ไม่ต้องทำซ้ำ
     sounds = {
-        click: new Audio('sounds/Drop.mp3'),
-        wrongAnswer: new Audio('sounds/Wrong Answer.mp3'),
-        win: new Audio('sounds/Anime Wow Sound Effect.mp3')
+        click: new Audio('sounds/click.mp3'),
+        wrongAnswer: new Audio('sounds/wrong-answer.mp3'),
+        win: new Audio('sounds/win-wow Sound Effect.mp3')
     };
     sounds.click.volume = 0.8;
     sounds.win.volume = 0.7;
