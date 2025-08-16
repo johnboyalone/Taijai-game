@@ -864,4 +864,32 @@ initializeSounds();
     // =================================================================
     setupInitialListeners();
     showScreen('splash');
+// ======== SOUND TEST LOGIC (Temporary) ========
+const testClickBtn = document.getElementById('test-click-sound');
+const testWrongBtn = document.getElementById('test-wrong-sound');
+const testWinBtn = document.getElementById('test-win-sound');
+
+if (testClickBtn) {
+    testClickBtn.addEventListener('click', () => {
+        console.log('Testing click sound...');
+        const clickSound = new Audio('sounds/click.mp3');
+        clickSound.play().catch(e => console.error("Click sound error:", e));
+    });
+}
+if (testWrongBtn) {
+    testWrongBtn.addEventListener('click', () => {
+        console.log('Testing wrong sound...');
+        const wrongSound = new Audio('sounds/wrong-answer.mp3');
+        wrongSound.play().catch(e => console.error("Wrong sound error:", e));
+    });
+}
+if (testWinBtn) {
+    testWinBtn.addEventListener('click', () => {
+        console.log('Testing win sound...');
+        const winSound = new Audio('sounds/win-wow.mp3');
+        winSound.play().catch(e => console.error("Win sound error:", e));
+    });
+}
+// ======== END SOUND TEST LOGIC ========
+
 });
