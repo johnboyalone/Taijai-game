@@ -368,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
                 if (connectedPlayers.length >= 2) {
                     roomData.gameState = 'setup';
+                    // ⭐ ทำให้แน่ใจว่า turnOrder ถูกเรียงลำดับตั้งแต่เริ่ม ⭐
                     roomData.turnOrder = connectedPlayers.map(p => p.id).sort();
                     roomData.turn = roomData.turnOrder[0];
                 }
@@ -439,17 +440,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeGameUI(roomData) {
         const number = generateRandomNumber();
         db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ number: number.join(''), numberSet: true });
-
         ui.ourNumberDisplay.innerHTML = '';
         number.forEach(digit => {
             ui.ourNumberDisplay.innerHTML += `<div class="number-input">${digit}</div>`;
         });
-
         ui.guessNumberContainer.innerHTML = '';
         for (let i = 0; i < GUESS_LENGTH; i++) {
             ui.guessNumberContainer.innerHTML += `<div class="number-input"></div>`;
         }
-
         createNumberPad();
         currentGuess = [];
         showToast('เกมเริ่ม! นี่คือเลขของคุณ');
@@ -470,9 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const cell = document.createElement('div');
             cell.className = 'number-cell';
             cell.textContent = val;
-            if (val === 'ลบ' || val === 'ทาย') {
-                cell.classList.add('special');
-            }
+            if (val === 'ลบ' || val === 'ทาย') cell.classList.add('special');
             cell.addEventListener('click', () => handleNumberPadClick(val));
             ui.numberPadContainer.appendChild(cell);
         });
@@ -485,21 +481,13 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast("ยังไม่ถึงตาของคุณ!");
             return;
         }
-
         if (value === 'ลบ') {
-            if (currentGuess.length > 0) {
-                currentGuess.pop();
-            }
+            if (currentGuess.length > 0) currentGuess.pop();
         } else if (value === 'ทาย') {
-            if (currentGuess.length === GUESS_LENGTH) {
-                submitGuess();
-            } else {
-                showToast(`กรุณาใส่เลขให้ครบ ${GUESS_LENGTH} ตัว`);
-            }
+            if (currentGuess.length === GUESS_LENGTH) submitGuess();
+            else showToast(`กรุณาใส่เลขให้ครบ ${GUESS_LENGTH} ตัว`);
         } else {
-            if (currentGuess.length < GUESS_LENGTH) {
-                currentGuess.push(value);
-            }
+            if (currentGuess.length < GUESS_LENGTH) currentGuess.push(value);
         }
         updateGuessDisplay();
     }
@@ -511,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ⭐⭐⭐ START: REVISED FUNCTIONS ⭐⭐⭐
+    // ⭐⭐⭐ START: MAJOR FIX AREA ⭐⭐⭐
     function submitGuess() {
         if (!currentTargetId) {
             showToast("กรุณาเลือกเป้าหมายที่จะทาย!");
@@ -523,18 +511,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const guessString = currentGuess.join('');
-        const roomRef = db.ref(`rooms/${currentRoomId}`);
 
-        // Clear local UI immediately for better responsiveness
-        currentGuess = [];
-        updateGuessDisplay();
-
-        roomRef.transaction(roomData => {
+        db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
             if (!roomData) return;
 
             const history = roomData.players[currentPlayerId].guesses?.[currentTargetId] || [];
             if (Object.values(history).some(item => item.guess === guessString)) {
-                return; // Abort transaction for duplicate guess
+                return; // Abort transaction if guess is a duplicate
             }
 
             const opponent = roomData.players[currentTargetId];
@@ -548,20 +531,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             roomData.lastAction = { actorName: me.name, targetName: opponent.name, action: 'guess' };
 
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-            const currentIndex = activePlayers.indexOf(roomData.turn);
-            let nextIndex = (currentIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers[nextIndex];
+            // Use the simple, robust logic from the old working code.
+            // This relies on `turnOrder` being correctly sorted from the start of the game.
+            const currentIndex = roomData.turnOrder.indexOf(roomData.turn);
+            const nextIndex = (currentIndex + 1) % roomData.turnOrder.length;
+            roomData.turn = roomData.turnOrder[nextIndex];
 
             return roomData;
         }).then(result => {
             if (!result.committed) {
                 showToast("คุณเคยทายเลขนี้ไปแล้ว!");
             }
-        }).catch(error => {
-            console.error("Submit guess transaction failed: ", error);
-            showToast("เกิดข้อผิดพลาดในการส่งคำทาย");
         });
+
+        // Clear our own UI immediately for responsiveness
+        currentGuess = [];
+        updateGuessDisplay();
     }
 
     function submitFinalAnswer() {
@@ -569,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isMyTurn) { showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!"); return; }
         if (!currentTargetId) { showToast("กรุณาเลือกเป้าหมายที่จะส่งคำตอบสุดท้าย!"); return; }
         if (currentGuess.length !== GUESS_LENGTH) { showToast(`กรุณาใส่เลขคำตอบให้ครบ ${GUESS_LENGTH} ตัว`); return; }
-
+        
         const finalAnswer = currentGuess.join('');
 
         db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
@@ -589,6 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // Always create a new, sorted turnOrder from players still in the game
             const activePlayers = Object.values(roomData.players).filter(p => p.connected && p.status === 'playing').map(p => p.id).sort();
             roomData.turnOrder = activePlayers;
 
@@ -616,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateGuessDisplay();
         currentTargetId = null;
     }
-    // ⭐⭐⭐ END: REVISED FUNCTIONS ⭐⭐⭐
+    // ⭐⭐⭐ END: MAJOR FIX AREA ⭐⭐⭐
 
     function calculateClues(guess, answer) {
         let strikes = 0, balls = 0;
