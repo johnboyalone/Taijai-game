@@ -23,26 +23,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeSounds() {
         if (soundsInitialized) return;
         soundsInitialized = true;
-
         console.log("Initializing sounds for the first time...");
-
         sounds = {
             click: new Audio('sounds/click.mp3'),
             wrongAnswer: new Audio('sounds/wrong-answer.mp3'),
             win: new Audio('sounds/win-wow.mp3')
         };
         bgm = new Audio('sounds/background-music.mp3');
-
-        // ตั้งค่าคุณสมบัติต่างๆ
         bgm.loop = true;
         bgm.volume = 0.3;
         sounds.click.volume = 0.8;
         sounds.win.volume = 0.7;
-
-        // บังคับให้เบราว์เซอร์โหลดไฟล์เสียงล่วงหน้า
         Object.values(sounds).forEach(sound => sound.load());
         bgm.load();
-
         console.log("Sounds and BGM are ready to be played.");
     }
 
@@ -96,27 +89,20 @@ document.addEventListener('DOMContentLoaded', function() {
         gameOver: document.getElementById('game-over-screen')
     };
     const ui = {
-        // Lobby & Room Creation
         goToCreateBtn: document.getElementById('go-to-create-btn'),
         goToJoinBtn: document.getElementById('go-to-join-btn'),
         confirmCreateBtn: document.getElementById('confirm-create-btn'),
         hostNameInput: document.getElementById('host-name-input'),
         newRoomNameInput: document.getElementById('new-room-name-input'),
         newRoomPasswordInput: document.getElementById('new-room-password-input'),
-
-        // Room List & Password Modal
         roomListContent: document.getElementById('room-list-content'),
         passwordModal: document.getElementById('password-modal'),
         passwordModalRoomName: document.getElementById('password-modal-room-name'),
         passwordModalInput: document.getElementById('password-modal-input'),
         passwordModalSubmitBtn: document.getElementById('password-modal-submit-btn'),
-
-        // Joiner Setup
         joinerRoomNameDisplay: document.getElementById('joiner-room-name-display'),
         joinerNameInput: document.getElementById('joiner-name-input'),
         confirmJoinBtn: document.getElementById('confirm-join-btn'),
-
-        // Waiting Room
         roomCodeText: document.getElementById('room-code-text'),
         playerSlots: {
             player1: document.getElementById('player1-slot'),
@@ -126,8 +112,6 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         waitingMessage: document.getElementById('waiting-message'),
         startGameBtn: document.getElementById('start-game-btn'),
-
-        // Main Game
         turnIndicator: document.getElementById('turn-indicator'),
         turnText: document.getElementById('turn-text'),
         ourNumberDisplay: document.getElementById('our-number-display'),
@@ -140,16 +124,12 @@ document.addEventListener('DOMContentLoaded', function() {
         submitFinalAnswerBtn: document.getElementById('submit-final-answer-btn'),
         spectatorOverlay: document.getElementById('spectator-overlay'),
         spectatorMessage: document.getElementById('spectator-message'),
-
-        // Game Over
         gameOverTitle: document.getElementById('game-over-title'),
         winnerName: document.getElementById('winner-name'),
         gameOverMessage: document.getElementById('game-over-message'),
         gameOverNumbersContainer: document.getElementById('game-over-numbers-container'),
         rematchBtn: document.getElementById('rematch-btn'),
         backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
-
-        // Misc
         toast: document.getElementById('toast'),
         actionToast: document.getElementById('action-toast'),
         actionToastText: document.getElementById('action-toast-text')
@@ -194,23 +174,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const roomData = snapshot.val();
 
-            // Play BGM when game starts
             if (previousGameState === 'waiting' && (roomData.gameState === 'setup' || roomData.gameState === 'playing')) {
                 playBGM();
             }
             previousGameState = roomData.gameState;
 
-            // Handle transient actions like showing a toast for a guess
             if (roomData.lastAction) {
                 const { actorName, targetName, action } = roomData.lastAction;
                 if (action === 'guess') {
                     showActionToast(`${actorName} กำลังทายเลขของ ${targetName}...`);
                 }
-                // Remove the action so it doesn't show again on next update
                 db.ref(`rooms/${currentRoomId}/lastAction`).remove();
             }
 
-            // Main state machine
             switch(roomData.gameState) {
                 case 'waiting':
                     showScreen('waiting');
@@ -218,17 +194,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'setup':
                     showScreen('game');
-                    // Each player sets their number
                     if (!roomData.players[currentPlayerId].numberSet) {
                         initializeGameUI(roomData);
                     }
-
-                    // Check if all connected players have set their number
                     const allPlayersSet = Object.values(roomData.players)
                         .filter(p => p.connected)
                         .every(p => p.numberSet);
-
-                    // If so, host moves the game to 'playing' state
                     if (allPlayersSet && currentPlayerId === 'player1') {
                         db.ref(`rooms/${currentRoomId}`).update({ gameState: 'playing' });
                     }
@@ -255,57 +226,29 @@ document.addEventListener('DOMContentLoaded', function() {
             playSound(sounds.click);
             showScreen('lobby');
         });
-        ui.goToCreateBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            showScreen('createRoom');
-        });
-        ui.goToJoinBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            showScreen('roomList');
-            loadAndDisplayRooms();
-        });
-        ui.confirmCreateBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            createRoom();
-        });
-        ui.passwordModalSubmitBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            handlePasswordSubmit();
-        });
+        ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
+        ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
+        ui.confirmCreateBtn.addEventListener('click', () => { playSound(sounds.click); createRoom(); });
+        ui.passwordModalSubmitBtn.addEventListener('click', () => { playSound(sounds.click); handlePasswordSubmit(); });
         ui.passwordModal.addEventListener('click', function(e) { if(e.target === this) this.classList.remove('show'); });
-        ui.confirmJoinBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            joinRoom();
-        });
+        ui.confirmJoinBtn.addEventListener('click', () => { playSound(sounds.click); joinRoom(); });
         ui.startGameBtn.addEventListener('click', startGame);
-        ui.submitFinalAnswerBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            submitFinalAnswer();
-        });
-        ui.rematchBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            requestRematch();
-        });
-        ui.backToLobbyBtn.addEventListener('click', () => {
-            playSound(sounds.click);
-            window.location.reload();
-        });
+        ui.submitFinalAnswerBtn.addEventListener('click', () => { playSound(sounds.click); submitFinalAnswer(); });
+        ui.rematchBtn.addEventListener('click', () => { playSound(sounds.click); requestRematch(); });
+        ui.backToLobbyBtn.addEventListener('click', () => { playSound(sounds.click); window.location.reload(); });
     }
 
     function createRoom() {
         const hostName = ui.hostNameInput.value.trim();
         const roomName = ui.newRoomNameInput.value.trim();
         const password = ui.newRoomPasswordInput.value;
-
         if (!hostName || !roomName || !/^\d{4}$/.test(password)) {
             showToast('กรุณากรอกข้อมูลให้ครบ (รหัสผ่าน 4 ตัวเลข)');
             return;
         }
-
         const newRoomId = db.ref('rooms').push().key;
         currentPlayerId = 'player1';
         currentRoomId = newRoomId;
-
         const roomData = {
             roomName, password,
             players: {
@@ -314,13 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 player3: { id: 'player3', name: 'ผู้เล่น 3', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
                 player4: { id: 'player4', name: 'ผู้เล่น 4', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' }
             },
-            gameState: 'waiting',
-            turn: null,
-            turnOrder: [],
-            rematch: {},
-            lastAction: null
+            gameState: 'waiting', turn: null, turnOrder: [], rematch: {}, lastAction: null
         };
-
         db.ref('rooms/' + newRoomId).set(roomData).then(() => {
             showToast(`สร้างห้อง "${roomName}" สำเร็จ!`);
             listenToRoomUpdates();
@@ -331,7 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadAndDisplayRooms() {
         const roomsRef = db.ref('rooms');
         if (roomListListener) roomsRef.off('value', roomListListener);
-
         roomListListener = roomsRef.on('value', snapshot => {
             ui.roomListContent.innerHTML = '';
             if (!snapshot.exists()) {
@@ -371,7 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (snapshot.val() === enteredPassword) {
                 ui.passwordModalInput.value = '';
                 ui.passwordModal.classList.remove('show');
-
                 joiningRoomData = { id: roomId, name: roomName };
                 ui.joinerRoomNameDisplay.textContent = roomName;
                 showScreen('joinerSetup');
@@ -387,12 +323,9 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('กรุณากรอกชื่อของคุณ');
             return;
         }
-
         const roomId = joiningRoomData.id;
         if (roomListListener) db.ref('rooms').off('value', roomListListener);
-
         const roomRef = db.ref(`rooms/${roomId}`);
-
         roomRef.transaction(currentRoomData => {
             if (currentRoomData) {
                 let availableSlotId = null;
@@ -402,15 +335,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         break;
                     }
                 }
-
                 if (availableSlotId) {
                     currentRoomData.players[availableSlotId].connected = true;
                     currentRoomData.players[availableSlotId].name = joinerName;
                     currentPlayerId = availableSlotId;
                     currentRoomId = roomId;
                 } else {
-                    // This case will be handled by the .then() block
-                    return; // Abort transaction
+                    return;
                 }
             }
             return currentRoomData;
@@ -431,15 +362,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function startGame() {
         if (ui.startGameBtn.disabled) return;
-
         playBGM();
-
         db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
             if (roomData) {
                 const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
                 if (connectedPlayers.length >= 2) {
                     roomData.gameState = 'setup';
-                    // Sort IDs to ensure consistent turn order regardless of join order
                     roomData.turnOrder = connectedPlayers.map(p => p.id).sort();
                     roomData.turn = roomData.turnOrder[0];
                 }
@@ -451,40 +379,29 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateWaitingRoomUI(roomData) {
         ui.roomCodeText.textContent = roomData.roomName;
         const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
-
         Object.values(ui.playerSlots).forEach(slot => {
             const slotPlayerId = slot.id.replace('-slot', '');
             const player = roomData.players[slotPlayerId];
+            const nameEl = slot.querySelector('.player-name');
+            const statusEl = slot.querySelector('.player-status');
+            const avatarEl = slot.querySelector('.player-avatar-initial');
             if (player && player.connected) {
                 slot.style.display = 'flex';
-                const nameEl = slot.querySelector('.player-name');
-                const statusEl = slot.querySelector('.player-status');
-                const avatarEl = slot.querySelector('.player-avatar-initial');
-
                 nameEl.textContent = player.isHost ? `${player.name} (เจ้าของห้อง)` : player.name;
                 statusEl.textContent = 'เชื่อมต่อแล้ว';
                 statusEl.className = 'player-status connected';
                 avatarEl.textContent = player.name.substring(0, 1).toUpperCase();
             } else {
                 slot.style.display = 'flex';
-                const nameEl = slot.querySelector('.player-name');
-                const statusEl = slot.querySelector('.player-status');
-                const avatarEl = slot.querySelector('.player-avatar-initial');
                 nameEl.textContent = `ผู้เล่น ${slotPlayerId.replace('player', '')}`;
                 statusEl.textContent = 'กำลังรอ...';
                 statusEl.className = 'player-status waiting';
                 avatarEl.textContent = '?';
             }
         });
-
         if (currentPlayerId === 'player1') {
-            if (connectedPlayers.length >= 2) {
-                ui.startGameBtn.disabled = false;
-                ui.waitingMessage.textContent = `พร้อมแล้วกด "เริ่มเกม" ได้เลย!`;
-            } else {
-                ui.startGameBtn.disabled = true;
-                ui.waitingMessage.textContent = 'รอผู้เล่นอย่างน้อย 2 คน...';
-            }
+            ui.startGameBtn.disabled = connectedPlayers.length < 2;
+            ui.waitingMessage.textContent = connectedPlayers.length < 2 ? 'รอผู้เล่นอย่างน้อย 2 คน...' : `พร้อมแล้วกด "เริ่มเกม" ได้เลย!`;
         } else {
             ui.startGameBtn.disabled = true;
             ui.waitingMessage.textContent = 'รอเจ้าของห้องเริ่มเกม...';
@@ -493,14 +410,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updatePlayingUI(roomData) {
         const me = roomData.players[currentPlayerId];
-
         if (me.status === 'eliminated') {
             ui.spectatorOverlay.classList.add('show');
             ui.spectatorMessage.textContent = `คุณแพ้แล้ว! กำลังรับชมผู้เล่นที่เหลือ...`;
         } else {
             ui.spectatorOverlay.classList.remove('show');
         }
-
         updateTurnIndicator(roomData);
         updatePlayerSummary(roomData);
         updateHistoryLog(roomData);
@@ -565,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleNumberPadClick(value) {
         playSound(sounds.click);
-        const isMyTurn = document.getElementById('turn-indicator').classList.contains('my-turn');
+        const isMyTurn = ui.turnIndicator.classList.contains('my-turn');
         if (!isMyTurn) {
             showToast("ยังไม่ถึงตาของคุณ!");
             return;
@@ -596,68 +511,52 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ⭐⭐⭐ START: MAJOR FIX AREA ⭐⭐⭐
+    // ⭐⭐⭐ START: REVISED FUNCTIONS ⭐⭐⭐
     function submitGuess() {
         if (!currentTargetId) {
             showToast("กรุณาเลือกเป้าหมายที่จะทาย!");
+            return;
+        }
+        if (currentGuess.length !== GUESS_LENGTH) {
+            showToast(`กรุณาใส่เลขให้ครบ ${GUESS_LENGTH} ตัว`);
             return;
         }
 
         const guessString = currentGuess.join('');
         const roomRef = db.ref(`rooms/${currentRoomId}`);
 
-        roomRef.transaction(roomData => {
-            if (!roomData) { return; } // Exit if room data is missing
+        // Clear local UI immediately for better responsiveness
+        currentGuess = [];
+        updateGuessDisplay();
 
-            // Check for duplicate guess within the transaction
+        roomRef.transaction(roomData => {
+            if (!roomData) return;
+
             const history = roomData.players[currentPlayerId].guesses?.[currentTargetId] || [];
             if (Object.values(history).some(item => item.guess === guessString)) {
-                return; // Abort transaction by returning undefined
+                return; // Abort transaction for duplicate guess
             }
 
-            // All good, proceed with the guess
             const opponent = roomData.players[currentTargetId];
             const me = roomData.players[currentPlayerId];
-            const clues = calculateClues(currentGuess, opponent.number.split(''));
+            const clues = calculateClues(guessString.split(''), opponent.number.split(''));
+            const guessData = { guess: guessString, strikes: clues.strikes, balls: clues.balls };
 
-            const guessData = {
-                guess: guessString,
-                strikes: clues.strikes,
-                balls: clues.balls
-            };
-
-            // Safely create nested objects if they don't exist
-            if (!roomData.players[currentPlayerId].guesses) {
-                roomData.players[currentPlayerId].guesses = {};
-            }
-            if (!roomData.players[currentPlayerId].guesses[currentTargetId]) {
-                roomData.players[currentPlayerId].guesses[currentTargetId] = [];
-            }
+            if (!roomData.players[currentPlayerId].guesses) roomData.players[currentPlayerId].guesses = {};
+            if (!roomData.players[currentPlayerId].guesses[currentTargetId]) roomData.players[currentPlayerId].guesses[currentTargetId] = [];
             roomData.players[currentPlayerId].guesses[currentTargetId].push(guessData);
 
-            // Set a transient action for other players to see
-            roomData.lastAction = {
-                actorName: me.name,
-                targetName: opponent.name,
-                action: 'guess'
-            };
+            roomData.lastAction = { actorName: me.name, targetName: opponent.name, action: 'guess' };
 
-            // Pass the turn to the next active player
             const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
             const currentIndex = activePlayers.indexOf(roomData.turn);
             let nextIndex = (currentIndex + 1) % activePlayers.length;
             roomData.turn = activePlayers[nextIndex];
 
-            return roomData; // Commit the changes
-
+            return roomData;
         }).then(result => {
             if (!result.committed) {
-                // This block runs if the transaction was aborted (e.g., duplicate guess)
                 showToast("คุณเคยทายเลขนี้ไปแล้ว!");
-            } else {
-                // This block runs if the transaction was successful
-                currentGuess = [];
-                updateGuessDisplay();
             }
         }).catch(error => {
             console.error("Submit guess transaction failed: ", error);
@@ -666,33 +565,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function submitFinalAnswer() {
-        const isMyTurn = document.getElementById('turn-indicator').classList.contains('my-turn');
-        if (!isMyTurn) {
-            showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!");
-            return;
-        }
-        if (!currentTargetId) {
-            showToast("กรุณาเลือกเป้าหมายที่จะส่งคำตอบสุดท้าย!");
-            return;
-        }
-        if (currentGuess.length !== GUESS_LENGTH) {
-            showToast(`กรุณาใส่เลขคำตอบให้ครบ ${GUESS_LENGTH} ตัว`);
-            return;
-        }
+        const isMyTurn = ui.turnIndicator.classList.contains('my-turn');
+        if (!isMyTurn) { showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!"); return; }
+        if (!currentTargetId) { showToast("กรุณาเลือกเป้าหมายที่จะส่งคำตอบสุดท้าย!"); return; }
+        if (currentGuess.length !== GUESS_LENGTH) { showToast(`กรุณาใส่เลขคำตอบให้ครบ ${GUESS_LENGTH} ตัว`); return; }
 
         const finalAnswer = currentGuess.join('');
 
         db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-            if (!roomData) { return; }
+            if (!roomData) return;
 
             const opponent = roomData.players[currentTargetId];
             const me = roomData.players[currentPlayerId];
+            const previousTurnPlayerId = roomData.turn;
 
             if (finalAnswer === opponent.number) {
-                // Correct Answer: Eliminate opponent
                 roomData.players[currentTargetId].status = 'eliminated';
             } else {
-                // Wrong Answer: Lose a chance
                 playSound(sounds.wrongAnswer);
                 me.finalChances -= 1;
                 if (me.finalChances <= 0) {
@@ -700,49 +589,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // Update the turn order to only include active players
-            roomData.turnOrder = Object.values(roomData.players)
-                .filter(p => p.connected && p.status === 'playing')
-                .map(p => p.id)
-                .sort();
+            const activePlayers = Object.values(roomData.players).filter(p => p.connected && p.status === 'playing').map(p => p.id).sort();
+            roomData.turnOrder = activePlayers;
 
-            // Check for game over condition
-            if (roomData.turnOrder.length <= 1) {
+            if (activePlayers.length <= 1) {
                 roomData.gameState = 'finished';
-                roomData.winner = roomData.turnOrder[0] || null; // Handle case where everyone loses
+                roomData.winner = activePlayers[0] || null;
                 roomData.reason = roomData.winner ? `${roomData.players[roomData.winner].name} คือผู้รอดชีวิตคนสุดท้าย!` : 'ไม่มีผู้ชนะในรอบนี้!';
+                roomData.turn = null;
             } else {
-                // Determine next turn
-                const currentIndex = roomData.turnOrder.indexOf(roomData.turn);
+                const lastPlayerIndex = activePlayers.indexOf(previousTurnPlayerId);
                 let nextIndex;
-                if (finalAnswer === opponent.number) { // If I guessed correctly, it's still my turn
-                    nextIndex = roomData.turnOrder.indexOf(currentPlayerId);
-                } else { // If I guessed wrong, it's the next person's turn
-                    nextIndex = (currentIndex + 1) % roomData.turnOrder.length;
+                if (finalAnswer === opponent.number && me.status === 'playing') {
+                    nextIndex = activePlayers.indexOf(currentPlayerId);
+                } else {
+                    const startIndex = (lastPlayerIndex === -1) ? 0 : lastPlayerIndex;
+                    nextIndex = (startIndex + 1) % activePlayers.length;
                 }
-                // Ensure next turn player exists
-                if (nextIndex === -1 || !roomData.turnOrder[nextIndex]) {
-                    nextIndex = 0;
-                }
-                roomData.turn = roomData.turnOrder[nextIndex];
+                if (nextIndex === -1 || !activePlayers[nextIndex]) nextIndex = 0;
+                roomData.turn = activePlayers[nextIndex];
             }
             return roomData;
         });
 
-        // Reset UI locally after submitting
         currentGuess = [];
         updateGuessDisplay();
         currentTargetId = null;
     }
-    // ⭐⭐⭐ END: MAJOR FIX AREA ⭐⭐⭐
+    // ⭐⭐⭐ END: REVISED FUNCTIONS ⭐⭐⭐
 
     function calculateClues(guess, answer) {
-        let strikes = 0;
-        let balls = 0;
-        let guessCopy = [...guess];
-        let answerCopy = [...answer];
-
-        // First pass for strikes
+        let strikes = 0, balls = 0;
+        let guessCopy = [...guess], answerCopy = [...answer];
         for (let i = guessCopy.length - 1; i >= 0; i--) {
             if (guessCopy[i] === answerCopy[i]) {
                 strikes++;
@@ -750,8 +628,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 answerCopy.splice(i, 1);
             }
         }
-
-        // Second pass for balls
         for (let i = 0; i < guessCopy.length; i++) {
             const foundIndex = answerCopy.indexOf(guessCopy[i]);
             if (foundIndex !== -1) {
@@ -768,36 +644,22 @@ document.addEventListener('DOMContentLoaded', function() {
             ui.historyTargetName.textContent = '';
             return;
         }
-
         const targetName = roomData.players[currentTargetId].name;
         ui.historyTargetName.textContent = `${targetName}`;
-
         const guesses = roomData.players[currentPlayerId].guesses?.[currentTargetId];
         ui.historyLog.innerHTML = '';
         if (!guesses) {
             ui.historyLog.innerHTML = `<p class="history-placeholder">ยังไม่เคยทาย ${targetName}</p>`;
             return;
         }
-
         Object.values(guesses).forEach(item => {
             const historyItem = document.createElement('div');
             historyItem.className = 'history-item';
-
             let cluesHTML = '';
-            if (item.strikes > 0) {
-                cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
-            }
-            if (item.balls > 0) {
-                cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
-            }
-            if (item.strikes === 0 && item.balls === 0) {
-                cluesHTML = `<div class="clue-box" style="background-color: #a0aec0;">OUT</div>`;
-            }
-
-            historyItem.innerHTML = `
-                <div class="history-guess">${item.guess}</div>
-                <div class="history-clues">${cluesHTML}</div>
-            `;
+            if (item.strikes > 0) cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
+            if (item.balls > 0) cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
+            if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box" style="background-color: #a0aec0;">OUT</div>`;
+            historyItem.innerHTML = `<div class="history-guess">${item.guess}</div><div class="history-clues">${cluesHTML}</div>`;
             ui.historyLog.appendChild(historyItem);
         });
         ui.historyLog.scrollTop = ui.historyLog.scrollHeight;
@@ -812,10 +674,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTurnIndicator(roomData) {
         const currentTurnPlayerId = roomData.turn;
         if (!currentTurnPlayerId) return;
-
         const isMyTurn = currentTurnPlayerId === currentPlayerId;
         const turnPlayerName = roomData.players[currentTurnPlayerId].name;
-
         ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
         ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
         ui.turnText.textContent = isMyTurn ? "ตาของคุณ" : `ตาของ ${turnPlayerName}`;
@@ -823,36 +683,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updatePlayerSummary(roomData) {
         ui.playerSummaryGrid.innerHTML = '';
-        const otherPlayers = Object.values(roomData.players)
-            .filter(p => p.connected && p.id !== currentPlayerId);
-
+        const otherPlayers = Object.values(roomData.players).filter(p => p.connected && p.id !== currentPlayerId);
         otherPlayers.forEach(player => {
             const playerBox = document.createElement('div');
             playerBox.className = 'player-summary-card';
             playerBox.dataset.playerId = player.id;
-
-            if (player.status === 'eliminated') {
-                playerBox.classList.add('is-eliminated');
-            }
-            if (player.id === currentTargetId) {
-                playerBox.classList.add('is-target');
-            }
-
-            playerBox.innerHTML = `
-                <div class="summary-card-name">${player.name}</div>
-                <div class="summary-card-status">${player.status === 'eliminated' ? 'แพ้แล้ว' : 'กำลังเล่น'}</div>
-            `;
-
+            if (player.status === 'eliminated') playerBox.classList.add('is-eliminated');
+            if (player.id === currentTargetId) playerBox.classList.add('is-target');
+            playerBox.innerHTML = `<div class="summary-card-name">${player.name}</div><div class="summary-card-status">${player.status === 'eliminated' ? 'แพ้แล้ว' : 'กำลังเล่น'}</div>`;
             playerBox.addEventListener('click', () => {
                 if (player.status !== 'eliminated') {
                     playSound(sounds.click);
-                    currentTargetId = player.id;
-                    // We don't need to call update functions here, the main listener will do it.
-                    // Just update the local state and let the UI reflect it on the next data sync.
-                    // For immediate feedback, we can just update the target class locally.
                     document.querySelectorAll('.player-summary-card').forEach(c => c.classList.remove('is-target'));
                     playerBox.classList.add('is-target');
-                    updateHistoryLog(roomData); // Update history immediately for better UX
+                    currentTargetId = player.id;
+                    updateHistoryLog(roomData);
                 }
             });
             ui.playerSummaryGrid.appendChild(playerBox);
@@ -864,20 +709,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
 
     function displayGameOver(roomData) {
-        stopBGM(); // Stop BGM
-
+        stopBGM();
         const winnerId = roomData.winner;
         const isWinner = winnerId === currentPlayerId;
-
-        if (isWinner) {
-            playSound(sounds.win);
-        }
-
+        if (isWinner) playSound(sounds.win);
         screens.gameOver.className = `game-screen show ${isWinner ? 'win' : 'lose'}`;
         ui.gameOverTitle.textContent = isWinner ? "🎉 คุณชนะ! 🎉" : "จบเกมแล้ว";
         ui.winnerName.textContent = winnerId ? `ผู้ชนะคือ: ${roomData.players[winnerId].name}` : 'ไม่มีผู้ชนะ';
         ui.gameOverMessage.textContent = roomData.reason;
-
         ui.gameOverNumbersContainer.innerHTML = '';
         Object.values(roomData.players).forEach(player => {
             if (player.connected) {
@@ -894,14 +733,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function requestRematch() {
         db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}/rematch`).set(true);
-
-        // Let the listener handle the logic for starting the rematch
-        // This prevents race conditions. The host will eventually reset the game.
         db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
             const roomData = snapshot.val();
             const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
             const allRematch = connectedPlayers.every(p => p.rematch);
-
             if (allRematch && connectedPlayers.length > 1 && currentPlayerId === 'player1') {
                 resetGameForRematch(roomData);
             }
@@ -912,18 +747,15 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast("ทุกคนพร้อมแล้ว เริ่มเกมใหม่อีกครั้ง!");
         const updates = {};
         updates[`rooms/${currentRoomId}/gameState`] = 'setup';
-
         const connectedPlayerIds = Object.values(roomData.players)
             .filter(p => p.connected)
             .map(p => p.id)
             .sort();
-
         updates[`rooms/${currentRoomId}/turnOrder`] = connectedPlayerIds;
         updates[`rooms/${currentRoomId}/turn`] = connectedPlayerIds[0];
         updates[`rooms/${currentRoomId}/winner`] = null;
         updates[`rooms/${currentRoomId}/reason`] = null;
         updates[`rooms/${currentRoomId}/lastAction`] = null;
-
         Object.keys(roomData.players).forEach(playerId => {
             if (roomData.players[playerId].connected) {
                 updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
@@ -933,7 +765,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 updates[`rooms/${currentRoomId}/players/${playerId}/rematch`] = false;
             }
         });
-
         db.ref().update(updates);
     }
 
