@@ -26,6 +26,28 @@ document.addEventListener('DOMContentLoaded', function() {
     let roomListListener = null;
     let currentGuess = [];
     const GUESS_LENGTH = 4;
+    let isMuted = false;
+
+    // =================================================================
+    // ======== AUDIO REFERENCES & FUNCTIONS ========
+    // =================================================================
+    const sounds = {
+        background: new Audio('sounds/background-music.mp3'),
+        click: new Audio('sounds/click.mp3'),
+        win: new Audio('sounds/win-wow.mp3'),
+        wrong: new Audio('sounds/wrong-answer.mp3')
+    };
+
+    // ตั้งค่าเสียงพื้นหลัง
+    sounds.background.loop = true;
+    sounds.background.volume = 0.3;
+
+    // ฟังก์ชันสำหรับเล่นเสียงเอฟเฟกต์
+    function playSound(sound) {
+        if (isMuted) return; // ไม่เล่นเสียงถ้าปิดเสียงอยู่
+        sound.currentTime = 0;
+        sound.play().catch(error => console.log(`Error playing sound: ${error.message}`));
+    }
 
     // =================================================================
     // ======== UI ELEMENT REFERENCES ========
@@ -97,7 +119,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Misc
         toast: document.getElementById('toast'),
         actionToast: document.getElementById('action-toast'),
-        actionToastText: document.getElementById('action-toast-text')
+        actionToastText: document.getElementById('action-toast-text'),
+        soundControl: document.getElementById('sound-control'),
+        soundIcon: document.getElementById('sound-icon')
     };
 
     // =================================================================
@@ -126,18 +150,46 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
 
     function setupInitialListeners() {
-        screens.splash.addEventListener('click', () => showScreen('lobby'));
-        ui.goToCreateBtn.addEventListener('click', () => showScreen('createRoom'));
+        // Sound Control Listener
+        ui.soundControl.addEventListener('click', toggleMute);
+
+        screens.splash.addEventListener('click', () => {
+            playSound(sounds.click);
+            // Start background music only if not muted
+            if (!sounds.background.paused) { // Already playing
+                return;
+            }
+            if (!isMuted) {
+                sounds.background.play().catch(e => console.log("Autoplay was prevented. User must interact first."));
+            }
+            showScreen('lobby');
+        });
+
+        ui.goToCreateBtn.addEventListener('click', () => {
+            playSound(sounds.click);
+            showScreen('createRoom');
+        });
         ui.goToJoinBtn.addEventListener('click', () => {
+            playSound(sounds.click);
             showScreen('roomList');
             loadAndDisplayRooms();
         });
-        ui.confirmCreateBtn.addEventListener('click', createRoom);
-        ui.passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
+        ui.confirmCreateBtn.addEventListener('click', () => {
+            playSound(sounds.click);
+            createRoom();
+        });
+        ui.passwordModalSubmitBtn.addEventListener('click', () => {
+            playSound(sounds.click);
+            handlePasswordSubmit();
+        });
         ui.passwordModal.addEventListener('click', function(e) { if(e.target === this) this.classList.remove('show'); });
-        ui.confirmJoinBtn.addEventListener('click', joinRoom);
+        ui.confirmJoinBtn.addEventListener('click', () => {
+            playSound(sounds.click);
+            joinRoom();
+        });
         
         ui.startGameBtn.addEventListener('click', () => {
+            playSound(sounds.click);
             if (ui.startGameBtn.disabled) return;
 
             db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
@@ -161,9 +213,29 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        ui.submitFinalAnswerBtn.addEventListener('click', submitFinalAnswer);
-        ui.rematchBtn.addEventListener('click', requestRematch);
+        ui.submitFinalAnswerBtn.addEventListener('click', () => {
+            // เสียงจะถูกเล่นในฟังก์ชัน submitFinalAnswer เอง
+            submitFinalAnswer();
+        });
+        ui.rematchBtn.addEventListener('click', () => {
+            playSound(sounds.click);
+            requestRematch();
+        });
         ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        if (isMuted) {
+            sounds.background.pause();
+            ui.soundIcon.textContent = '🔇';
+        } else {
+            sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+            ui.soundIcon.textContent = '🔊';
+        }
+        // เล่นเสียงคลิกเบาๆ เพื่อยืนยันการกระทำ แม้จะปิดเสียงอยู่ก็ตาม
+        sounds.click.volume = 0.5;
+        sounds.click.play();
     }
 
     function createRoom() {
@@ -224,6 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 roomItem.innerHTML = `<div class="room-info"><div class="room-name">${roomData.roomName}</div><div class="host-name">สร้างโดย: ${roomData.hostName}</div></div><div class="room-status">${playerCount} / 4</div>`;
                 
                 roomItem.addEventListener('click', () => {
+                    playSound(sounds.click);
                     if (playerCount >= 4) {
                         showToast("ห้องนี้เต็มแล้ว");
                         return;
@@ -303,7 +376,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
     // =================================================================
     // ======== REAL-TIME DATA SYNCING & GAME STATE MACHINE ========
     // =================================================================
@@ -487,6 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (opponentData.status !== 'eliminated') {
                 card.addEventListener('click', () => {
+                    playSound(sounds.click);
                     currentTargetId = opponentId;
                     updatePlayerSummaryGrid(roomData);
                     updateHistoryLog(roomData);
@@ -518,6 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleNumberPadClick(value) {
+        playSound(sounds.click);
         if (ui.turnIndicator.classList.contains('their-turn')) {
             showToast("ยังไม่ถึงตาของคุณ!");
             return;
@@ -645,6 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function submitFinalAnswer() {
+        playSound(sounds.click);
         if (ui.turnIndicator.classList.contains('their-turn')) {
             showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!");
             return;
@@ -670,6 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     targetPlayer.status = 'eliminated';
                     actionType = 'final_correct';
                 } else {
+                    playSound(sounds.wrong); // เล่นเสียงเมื่อตอบผิด
                     actorPlayer.finalChances--;
                     if (actorPlayer.finalChances <= 0) {
                         actorPlayer.status = 'eliminated';
@@ -726,6 +802,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const isWinner = winnerId === currentPlayerId;
         const winnerName = roomData.players[winnerId]?.name || 'ไม่มีผู้ชนะ';
         
+        if (isWinner) {
+            playSound(sounds.win);
+        }
+
         screens.gameOver.className = `game-screen show ${isWinner ? 'win' : 'lose'}`;
         ui.gameOverTitle.textContent = isWinner ? "🎉 คุณชนะ! 🎉" : "จบเกมแล้ว";
         ui.winnerName.textContent = `ผู้ชนะคือ: ${winnerName}`;
