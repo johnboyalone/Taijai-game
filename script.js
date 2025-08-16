@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateWaitingRoomUI(roomData);
                     break;
                 case 'setup':
-                    if (!screens.game.classList.contains('show') || screens.gameOver.classList.contains('show')) {
+                    if (!screens.game.classList.contains('show')) {
                         initializeGameUI(roomData);
                     }
                     const allPlayersSetNumber = connectedPlayers.every(p => p.numberSet);
@@ -432,18 +432,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateGameOverUI(roomData) {
-        const myPlayerData = roomData.players[currentPlayerId];
-        if (myPlayerData && myPlayerData.connected) {
-            if (roomData.rematch && roomData.rematch[currentPlayerId]) {
-                ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
-                ui.rematchBtn.disabled = true;
-            } else {
-                ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
-                ui.rematchBtn.disabled = false;
-            }
-        } else {
-            ui.rematchBtn.textContent = 'คุณไม่ได้เชื่อมต่อ';
+        if (roomData.rematch && roomData.rematch[currentPlayerId]) {
+            ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
             ui.rematchBtn.disabled = true;
+        } else {
+            ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
+            ui.rematchBtn.disabled = false;
         }
     }
 
@@ -461,9 +455,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         createNumberPad();
         currentGuess = [];
-        updateGuessDisplay();
         
-        const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId && roomData.players[id].status === 'playing');
+        const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId);
         currentTargetId = firstTarget;
 
         db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
@@ -695,10 +688,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentTurnIndex = activePlayers.indexOf(roomData.turn);
                 const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
                 roomData.turn = activePlayers[nextTurnIndex];
-                
-                if (targetPlayer.status === 'eliminated' && currentTargetId === roomData.turn) {
-                    // This logic is complex, we'll let the user re-select for now.
-                }
             }
             return roomData;
         }).then(() => {
@@ -781,3 +770,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        db.ref().update(updates);
+    }
+
+    // =================================================================
+    // ======== INITIALIZATION ========
+    // =================================================================
+    setupInitialListeners();
+    showScreen('splash');
+});
