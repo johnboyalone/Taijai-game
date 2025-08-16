@@ -16,8 +16,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const db = firebase.database();
 
     // ======== AUDIO ASSETS ========
-let sounds = {}; // สร้าง Object ว่างๆ ไว้ก่อน
-let soundsInitialized = false; // สร้างตัวแปรเพื่อเช็คว่าเสียงถูกโหลดแล้วหรือยัง
+let sounds = {};
+let soundsInitialized = false;
+
+function initializeSounds() {
+    if (soundsInitialized) return;
+            
+    console.log("Initializing sounds for the first time...");
+
+    sounds = {
+        click: new Audio('sounds/click.mp3'),
+        wrongAnswer: new Audio('sounds/wrong-answer.mp3'),
+        win: new Audio('sounds/win-wow.mp3')
+    };
+
+    // ตั้งค่าคุณสมบัติต่างๆ
+    sounds.click.volume = 0.8;
+    sounds.win.volume = 0.7;
+
+    // **ส่วนที่สำคัญที่สุด: บังคับให้เบราว์เซอร์โหลดไฟล์เสียงล่วงหน้า**
+    Object.values(sounds).forEach(sound => {
+        sound.load(); // คำสั่งให้เริ่มโหลด
+    });
+
+    soundsInitialized = true;
+    console.log("Sounds are ready to be played.");
+}
+
+function playSound(sound) {
+    // เช็คให้แน่ใจว่าเสียงถูกโหลดแล้วและพร้อมเล่น
+    if (sound && sound.readyState >= 3) { // ใช้ readyState 3 หรือ 4 เพื่อความแน่นอน
+        sound.currentTime = 0; // เริ่มเล่นจากต้นไฟล์เสมอ
+        sound.play().catch(e => console.error("Error playing sound:", e));
+    } else {
+        console.warn("Sound not ready to play yet:", sound);
+    }
+}
 
 function initializeSounds() {
     if (soundsInitialized) return; // ถ้าโหลดแล้ว ไม่ต้องทำซ้ำ
