@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentGuess = [];
     const GUESS_LENGTH = 4;
     let isMuted = false;
-    let turnTimerInterval = null; // ตัวแปรสำหรับเก็บ interval ของ timer
-    const TURN_DURATION = 15; // เวลาต่อตา (วินาที)
+    let turnTimerInterval = null;
+    const TURN_DURATION = 20; // อัปเดตเวลาเป็น 20 วินาที
 
     // =================================================================
     // ======== AUDIO REFERENCES & FUNCTIONS ========
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         click: new Audio('sounds/click.mp3'),
         win: new Audio('sounds/win-wow.mp3'),
         wrong: new Audio('sounds/wrong-answer.mp3'),
-        turn: new Audio('sounds/your-turn.mp3') // สมมติว่ามีไฟล์เสียงนี้ในโฟลเดอร์ sounds
+        turn: new Audio('sounds/your-turn.mp3')
     };
 
     sounds.background.loop = true;
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startGameBtn: document.getElementById('start-game-btn'),
         turnIndicator: document.getElementById('turn-indicator'),
         turnText: document.getElementById('turn-text'),
-        turnTimerBar: document.getElementById('turn-timer-bar'),
+        turnTimerDisplay: document.getElementById('turn-timer-display'), // อัปเดต UI reference
         ourNumberDisplay: document.getElementById('our-number-display'),
         playerSummaryGrid: document.getElementById('player-summary-grid'),
         historyLog: document.getElementById('history-log'),
@@ -142,16 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupInitialListeners() {
         ui.soundControl.addEventListener('click', toggleMute);
 
-        // ===== FIX: แก้ไขโค้ดส่วนที่ทำให้ค้างหน้าวิธีเล่น =====
         screens.splash.addEventListener('click', () => {
             playSound(sounds.click);
-            showScreen('lobby'); // แสดงหน้าล็อบบี้ทันที
-            // จากนั้นค่อยจัดการเรื่องเพลง
+            showScreen('lobby');
             if (sounds.background.paused && !isMuted) {
                 sounds.background.play().catch(e => console.log("Autoplay was prevented."));
             }
         });
-        // ===== END FIX =====
 
         ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
         ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
@@ -528,7 +525,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ui.numberPadContainer.appendChild(cell);
         });
     }
-
     function handleNumberPadClick(value) {
         playSound(sounds.click);
         if (ui.turnIndicator.classList.contains('their-turn')) {
@@ -611,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let cluesHTML = '';
             if (item.strikes > 0) cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
             if (item.balls > 0) cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
-            if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box" style="background-color: #a0aec0;">OUT</div>`;
+            if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box clue-out">OUT</div>`;
             historyItem.innerHTML = `<div class="history-guess">${item.guess}</div><div class="history-clues">${cluesHTML}</div>`;
             ui.historyLog.appendChild(historyItem);
         });
@@ -676,18 +672,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleTurnTimer(roomData) {
         if (turnTimerInterval) clearInterval(turnTimerInterval);
+        
+        const isMyTurn = roomData.turn === currentPlayerId;
+        ui.turnTimerDisplay.textContent = ''; // ล้างตัวเลขเก่าทุกครั้งที่อัปเดต
+
+        if (!isMyTurn) return; // ถ้าไม่ใช่ตาเรา ก็ไม่ต้องแสดงตัวนับเวลา
+
         const turnStartTime = roomData.turnStartTime || Date.now();
         const timePassed = (Date.now() - turnStartTime) / 1000;
-        let timeLeft = TURN_DURATION - timePassed;
+        let timeLeft = Math.round(TURN_DURATION - timePassed);
+
         turnTimerInterval = setInterval(() => {
-            const percentageLeft = (timeLeft / TURN_DURATION) * 100;
-            ui.turnTimerBar.style.width = `${Math.max(0, percentageLeft)}%`;
+            if (timeLeft >= 0) {
+                ui.turnTimerDisplay.textContent = timeLeft; // แสดงตัวเลขเวลา
+            }
+            
             if (timeLeft <= 0) {
                 clearInterval(turnTimerInterval);
-                if (roomData.turn === currentPlayerId) {
-                    showToast("หมดเวลา! ข้ามตาอัตโนมัติ");
-                    skipTurn();
-                }
+                db.ref(`rooms/${currentRoomId}/turn`).get().then(snapshot => {
+                    if (snapshot.val() === currentPlayerId) {
+                        showToast("หมดเวลา! ข้ามตาอัตโนมัติ");
+                        skipTurn();
+                    }
+                });
             }
             timeLeft--;
         }, 1000);
@@ -711,6 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // =================================================================
 
     function displayGameOver(roomData) {
+        if (turnTimerInterval) clearInterval(turnTimerInterval);
         showScreen('gameOver');
         const winnerId = roomData.winner;
         const isWinner = winnerId === currentPlayerId;
@@ -752,7 +760,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (roomData.players[playerId].connected) {
                 updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
                 updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
-           updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
+                updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
                 updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
             }
         });
