@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>เกม ทายเลขทายใจ v1.1</title>
+    <title>เกม ทายเลขทายใจ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <!-- อัปเดตเวอร์ชันเป็น 1.2 -->
+    <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
-
-    <!-- Sound Control Button -->
-    <div id="sound-control" class="sound-control">
-        <span id="sound-icon">🔊</span>
-    </div>
 
     <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
@@ -23,14 +19,14 @@
             <div class="instructions">
                 <h2>วิธีการเล่น (2-4 คน)</h2>
                 <ol>
-                    <li>ผู้เล่น 2-4 คน จะได้รับเลขลับ 4 หลักของตัวเอง</li>
-                    <li>เลือกเป้าหมาย แล้วทายเลข 4 หลักของเป้าหมายนั้น</li>
+                    <li>ผู้เล่นจะได้รับเลขลับ 4 หลักของตัวเอง</li>
+                    <li>ในแต่ละตา คุณมีเวลา 20 วินาทีในการทายเลขของเป้าหมาย</li>
                     <li>
-                        ดูผลคำใบ้:
+                        ผลการทาย:
                         <ul>
-                            <li><span class="clue-text-strike">สีเขียว (S)</span>: ตัวเลขและตำแหน่งถูกต้อง</li>
-                            <li><span class="clue-text-ball">สีส้ม (B)</span>: มีตัวเลขนั้น แต่ตำแหน่งผิด</li>
-                            <li><span class="clue-text-out">สีเทา (OUT)</span>: ไม่มีตัวเลขนั้นเลย</li>
+                            <li><span class="clue-box clue-strike">S (Strike)</span>: ตัวเลขและตำแหน่งถูกต้อง</li>
+                            <li><span class="clue-box clue-ball">B (Ball)</span>: ตัวเลขถูกต้องแต่ตำแหน่งผิด</li>
+                            <li><span class="clue-box clue-out">OUT</span>: ไม่มีตัวเลขนั้นในคำตอบ</li>
                         </ul>
                     </li>
                     <li>เมื่อมั่นใจ ให้ "ส่งคำตอบสุดท้าย" เพื่อกำจัดเป้าหมาย</li>
@@ -99,10 +95,30 @@
             <h2 class="waiting-room-title">ห้องรอเล่น</h2>
             <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
             <div class="player-list">
-                <div class="player-slot" id="player1-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 1</span><span class="player-status waiting">กำลังรอ...</span></div>
-                <div class="player-slot" id="player2-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 2</span><span class="player-status waiting">กำลังรอ...</span></div>
-                <div class="player-slot" id="player3-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 3</span><span class="player-status waiting">กำลังรอ...</span></div>
-                <div class="player-slot" id="player4-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 4</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <!-- Player 1 Slot -->
+                <div class="player-slot" id="player1-slot">
+                    <div class="player-avatar-initial">?</div>
+                    <span class="player-name">ผู้เล่น 1</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+                <!-- Player 2 Slot -->
+                <div class="player-slot" id="player2-slot">
+                    <div class="player-avatar-initial">?</div>
+                    <span class="player-name">ผู้เล่น 2</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+                <!-- Player 3 Slot -->
+                <div class="player-slot" id="player3-slot">
+                    <div class="player-avatar-initial">?</div>
+                    <span class="player-name">ผู้เล่น 3</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
+                <!-- Player 4 Slot -->
+                <div class="player-slot" id="player4-slot">
+                    <div class="player-avatar-initial">?</div>
+                    <span class="player-name">ผู้เล่น 4</span>
+                    <span class="player-status waiting">กำลังรอ...</span>
+                </div>
             </div>
             <p id="waiting-message" class="waiting-message">แชร์ชื่อห้องและรหัสผ่านให้เพื่อนของคุณ!</p>
             <button id="start-game-btn" class="lobby-button" disabled>เริ่มเกม</button>
@@ -111,25 +127,53 @@
 
     <!-- Screen 6: Main Game Screen -->
     <div id="main-game-screen" class="game-screen">
+        <!-- แก้ไขโครงสร้าง turn-indicator -->
         <div id="turn-indicator" class="turn-indicator">
             <span id="turn-text">กำลังรอ...</span>
-            <div id="turn-timer-bar" class="turn-timer-bar"></div>
+            <span id="turn-timer-display"></span> <!-- เพิ่ม span สำหรับแสดงตัวเลขเวลา -->
         </div>
         <div class="main-container">
-            <div class="section"><h2 class="section-title">⭐ เลขของเรา</h2><div id="our-number-display" class="input-container"></div></div>
-            <div class="section"><h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2><div id="player-summary-grid" class="player-summary-grid"></div></div>
-            <div class="section"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
+            <!-- Our Number Section -->
+            <div class="section">
+                <h2 class="section-title">⭐ เลขของเรา</h2>
+                <div id="our-number-display" class="input-container"></div>
+            </div>
+            <!-- Target Selection Section -->
+            <div class="section">
+                <h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2>
+                <div id="player-summary-grid" class="player-summary-grid"></div>
+            </div>
+            <!-- History Section -->
+            <div class="section">
+                <h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2>
+                <div id="history-log" class="history-log"></div>
+            </div>
+            <!-- Guess Input Section -->
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
-                <div id="guess-number-container" class="input-container"><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div></div>
+                <div id="guess-number-container" class="input-container">
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                    <div class="number-input"></div>
+                </div>
                 <div id="number-pad-container" class="number-grid"></div>
             </div>
+            <!-- Final Answer Section -->
             <div class="final-answer-section">
-                <div class="final-answer-chances">โอกาสตอบ: <span id="chance-1" class="chance-dot"></span><span id="chance-2" class="chance-dot"></span><span id="chance-3" class="chance-dot"></span></div>
+                <div class="final-answer-chances">
+                    โอกาสตอบ: 
+                    <span id="chance-1" class="chance-dot"></span>
+                    <span id="chance-2" class="chance-dot"></span>
+                    <span id="chance-3" class="chance-dot"></span>
+                </div>
                 <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
             </div>
         </div>
-        <div id="spectator-overlay" class="spectator-overlay"><div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div></div>
+        <!-- Spectator Overlay -->
+        <div id="spectator-overlay" class="spectator-overlay">
+            <div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div>
+        </div>
     </div>
 
     <!-- Screen 7: Game Over Screen -->
@@ -138,7 +182,9 @@
             <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
             <h2 id="winner-name" class="winner-name"></h2>
             <p id="game-over-message" class="game-over-message"></p>
-            <div class="game-over-numbers" id="game-over-numbers-container"></div>
+            <div class="game-over-numbers" id="game-over-numbers-container">
+                <!-- Numbers will be added here by JS -->
+            </div>
             <div class="game-over-buttons">
                 <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
                 <button id="back-to-lobby-btn" class="lobby-button secondary">กลับหน้าหลัก</button>
@@ -156,13 +202,21 @@
         </div>
     </div>
     <div id="toast" class="toast-notification"></div>
-    <div id="action-toast" class="action-toast"><p id="action-toast-text"></p></div>
+    <div id="action-toast" class="action-toast">
+        <p id="action-toast-text"></p>
+    </div>
+
+    <!-- Sound Control Button -->
+    <div id="sound-control" class="sound-control">
+        <span id="sound-icon">🔊</span>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <script src="script.js?v=1.1"></script>
+    <!-- อัปเดตเวอร์ชันเป็น 1.2 -->
+    <script src="script.js?v=1.2"></script>
 
 </body>
 </html>
