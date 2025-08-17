@@ -142,14 +142,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupInitialListeners() {
         ui.soundControl.addEventListener('click', toggleMute);
 
+        // ===== FIX: แก้ไขโค้ดส่วนที่ทำให้ค้างหน้าวิธีเล่น =====
         screens.splash.addEventListener('click', () => {
             playSound(sounds.click);
-            if (!sounds.background.paused) return;
-            if (!isMuted) {
+            showScreen('lobby'); // แสดงหน้าล็อบบี้ทันที
+            // จากนั้นค่อยจัดการเรื่องเพลง
+            if (sounds.background.paused && !isMuted) {
                 sounds.background.play().catch(e => console.log("Autoplay was prevented."));
             }
-            showScreen('lobby');
         });
+        // ===== END FIX =====
 
         ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
         ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
