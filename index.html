@@ -7,10 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- เราจะลบ link stylesheet เก่าออก แล้วให้ JS สร้างขึ้นมาใหม่ -->
 </head>
 <body>
 
+    <!-- เนื้อหา HTML ทั้งหมดของเกมจะอยู่ตรงนี้เหมือนเดิม -->
     <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
         <div class="splash-content">
@@ -160,22 +160,33 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <!-- ===== SCRIPT แก้ปัญหา CACHE ===== -->
-    <!-- เราจะลบ script tag เก่าออก แล้วใช้โค้ดนี้สร้างขึ้นมาใหม่แทน -->
+    <!-- ===== SCRIPT แก้ปัญหา CACHE และ ลำดับการโหลด (ที่ถูกต้อง) ===== -->
     <script>
         // สร้างเลขสุ่มที่ไม่ซ้ำกันเลยในแต่ละครั้งที่โหลดหน้าเว็บ
         const cacheBuster = '?' + Date.now();
 
-        // สร้างแท็ก <link> สำหรับ CSS แล้วเพิ่มเข้าไปใน <head>
+        // สร้างแท็ก <link> สำหรับ CSS (อันนี้ทำเลยได้ ไม่ต้องรอ)
         const cssLink = document.createElement('link');
         cssLink.rel = 'stylesheet';
         cssLink.href = 'style.css' + cacheBuster;
         document.head.appendChild(cssLink);
 
-        // สร้างแท็ก <script> สำหรับ JS แล้วเพิ่มเข้าไปใน <body>
-        const jsScript = document.createElement('script');
-        jsScript.src = 'script.js' + cacheBuster;
-        document.body.appendChild(jsScript);
+        // ===== ส่วนที่แก้ไข =====
+        // สร้างฟังก์ชันสำหรับโหลดและทำงาน script.js
+        function loadGameScript() {
+            const jsScript = document.createElement('script');
+            jsScript.src = 'script.js' + cacheBuster;
+            document.body.appendChild(jsScript);
+        }
+
+        // ตรวจสอบว่าหน้าเว็บโหลดเสร็จสมบูรณ์หรือยัง
+        if (document.readyState === 'complete') {
+            // ถ้าเสร็จแล้ว ก็โหลด script.js ได้เลย
+            loadGameScript();
+        } else {
+            // ถ้ายังไม่เสร็จ ให้รอจนกว่าจะเกิด event 'load' (โหลดเสร็จ) แล้วค่อยเรียกใช้ฟังก์ชัน
+            window.addEventListener('load', loadGameScript);
+        }
     </script>
 
 </body>
