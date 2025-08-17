@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>เกม ทายเลขทายใจ v1.3</title> <!-- อัปเดต Title ด้วยก็ได้ -->
+    <title>เกม ทายเลขทายใจ v1.3</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- อัปเดตเวอร์ชันเป็น 1.3 -->
-    <link rel="stylesheet" href="style.css?v=1.3">
+    <!-- เราจะลบ link stylesheet เก่าออก แล้วให้ JS สร้างขึ้นมาใหม่ -->
 </head>
 <body>
 
     <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
         <div class="splash-content">
-            <!-- ===== เพิ่ม v1.3 ต่อท้ายชื่อเกมตรงนี้ ===== -->
             <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v1.3</span></h1>
             <div class="instructions">
                 <h2>วิธีการเล่น (2-4 คน)</h2>
@@ -96,30 +94,10 @@
             <h2 class="waiting-room-title">ห้องรอเล่น</h2>
             <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
             <div class="player-list">
-                <!-- Player 1 Slot -->
-                <div class="player-slot" id="player1-slot">
-                    <div class="player-avatar-initial">?</div>
-                    <span class="player-name">ผู้เล่น 1</span>
-                    <span class="player-status waiting">กำลังรอ...</span>
-                </div>
-                <!-- Player 2 Slot -->
-                <div class="player-slot" id="player2-slot">
-                    <div class="player-avatar-initial">?</div>
-                    <span class="player-name">ผู้เล่น 2</span>
-                    <span class="player-status waiting">กำลังรอ...</span>
-                </div>
-                <!-- Player 3 Slot -->
-                <div class="player-slot" id="player3-slot">
-                    <div class="player-avatar-initial">?</div>
-                    <span class="player-name">ผู้เล่น 3</span>
-                    <span class="player-status waiting">กำลังรอ...</span>
-                </div>
-                <!-- Player 4 Slot -->
-                <div class="player-slot" id="player4-slot">
-                    <div class="player-avatar-initial">?</div>
-                    <span class="player-name">ผู้เล่น 4</span>
-                    <span class="player-status waiting">กำลังรอ...</span>
-                </div>
+                <div class="player-slot" id="player1-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 1</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <div class="player-slot" id="player2-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 2</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <div class="player-slot" id="player3-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 3</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <div class="player-slot" id="player4-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 4</span><span class="player-status waiting">กำลังรอ...</span></div>
             </div>
             <p id="waiting-message" class="waiting-message">แชร์ชื่อห้องและรหัสผ่านให้เพื่อนของคุณ!</p>
             <button id="start-game-btn" class="lobby-button" disabled>เริ่มเกม</button>
@@ -133,47 +111,20 @@
             <span id="turn-timer-display"></span>
         </div>
         <div class="main-container">
-            <!-- Our Number Section -->
-            <div class="section">
-                <h2 class="section-title">⭐ เลขของเรา</h2>
-                <div id="our-number-display" class="input-container"></div>
-            </div>
-            <!-- Target Selection Section -->
-            <div class="section">
-                <h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2>
-                <div id="player-summary-grid" class="player-summary-grid"></div>
-            </div>
-            <!-- History Section -->
-            <div class="section">
-                <h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2>
-                <div id="history-log" class="history-log"></div>
-            </div>
-            <!-- Guess Input Section -->
+            <div class="section"><h2 class="section-title">⭐ เลขของเรา</h2><div id="our-number-display" class="input-container"></div></div>
+            <div class="section"><h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2><div id="player-summary-grid" class="player-summary-grid"></div></div>
+            <div class="section"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
-                <div id="guess-number-container" class="input-container">
-                    <div class="number-input"></div>
-                    <div class="number-input"></div>
-                    <div class="number-input"></div>
-                    <div class="number-input"></div>
-                </div>
+                <div id="guess-number-container" class="input-container"><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div></div>
                 <div id="number-pad-container" class="number-grid"></div>
             </div>
-            <!-- Final Answer Section -->
             <div class="final-answer-section">
-                <div class="final-answer-chances">
-                    โอกาสตอบ: 
-                    <span id="chance-1" class="chance-dot"></span>
-                    <span id="chance-2" class="chance-dot"></span>
-                    <span id="chance-3" class="chance-dot"></span>
-                </div>
+                <div class="final-answer-chances">โอกาสตอบ: <span id="chance-1" class="chance-dot"></span><span id="chance-2" class="chance-dot"></span><span id="chance-3" class="chance-dot"></span></div>
                 <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
             </div>
         </div>
-        <!-- Spectator Overlay -->
-        <div id="spectator-overlay" class="spectator-overlay">
-            <div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div>
-        </div>
+        <div id="spectator-overlay" class="spectator-overlay"><div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div></div>
     </div>
 
     <!-- Screen 7: Game Over Screen -->
@@ -182,9 +133,7 @@
             <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
             <h2 id="winner-name" class="winner-name"></h2>
             <p id="game-over-message" class="game-over-message"></p>
-            <div class="game-over-numbers" id="game-over-numbers-container">
-                <!-- Numbers will be added here by JS -->
-            </div>
+            <div class="game-over-numbers" id="game-over-numbers-container"></div>
             <div class="game-over-buttons">
                 <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
                 <button id="back-to-lobby-btn" class="lobby-button secondary">กลับหน้าหลัก</button>
@@ -202,21 +151,32 @@
         </div>
     </div>
     <div id="toast" class="toast-notification"></div>
-    <div id="action-toast" class="action-toast">
-        <p id="action-toast-text"></p>
-    </div>
+    <div id="action-toast" class="action-toast"><p id="action-toast-text"></p></div>
 
     <!-- Sound Control Button -->
-    <div id="sound-control" class="sound-control">
-        <span id="sound-icon">🔊</span>
-    </div>
+    <div id="sound-control" class="sound-control"><span id="sound-icon">🔊</span></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <!-- อัปเดตเวอร์ชันเป็น 1.3 -->
-    <script src="script.js?v=1.3"></script>
+    <!-- ===== SCRIPT แก้ปัญหา CACHE ===== -->
+    <!-- เราจะลบ script tag เก่าออก แล้วใช้โค้ดนี้สร้างขึ้นมาใหม่แทน -->
+    <script>
+        // สร้างเลขสุ่มที่ไม่ซ้ำกันเลยในแต่ละครั้งที่โหลดหน้าเว็บ
+        const cacheBuster = '?' + Date.now();
+
+        // สร้างแท็ก <link> สำหรับ CSS แล้วเพิ่มเข้าไปใน <head>
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = 'style.css' + cacheBuster;
+        document.head.appendChild(cssLink);
+
+        // สร้างแท็ก <script> สำหรับ JS แล้วเพิ่มเข้าไปใน <body>
+        const jsScript = document.createElement('script');
+        jsScript.src = 'script.js' + cacheBuster;
+        document.body.appendChild(jsScript);
+    </script>
 
 </body>
 </html>
