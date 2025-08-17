@@ -752,4 +752,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (roomData.players[playerId].connected) {
                 updates[`rooms/${currentRoomId}/players/${playerId}/numberSet`] = false;
                 updates[`rooms/${currentRoomId}/players/${playerId}/finalChances`] = 3;
-           
+           updates[`rooms/${currentRoomId}/players/${playerId}/status`] = 'playing';
+                updates[`rooms/${currentRoomId}/players/${playerId}/guesses`] = null;
+            }
+        });
+        db.ref().update(updates);
+    }
+
+    // =================================================================
+    // ======== INITIALIZATION ========
+    // =================================================================
+    setupInitialListeners();
+    showScreen('splash');
+});
