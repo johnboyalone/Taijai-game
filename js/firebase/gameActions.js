@@ -1,32 +1,9 @@
-import { firebase } from './config.js';
+import { db, firebase } from './config.js';
 import { state } from '../state.js';
-import { showToast } from '../ui/core.js';
 import { updateGuessDisplay } from '../ui/gameScreen.js';
 import { drawNewCard } from '../cards.js';
-
-const db = firebase.database();
-
-export function startGame() {
-    db.ref(`rooms/${state.currentRoomId}`).get().then(snapshot => {
-        if (snapshot.exists()) {
-            const roomData = snapshot.val();
-            if (roomData.gameState === 'waiting') {
-                const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
-                const firstTurnPlayerId = connectedPlayerIds[0];
-                
-                const updates = {
-                    gameState: 'setup',
-                    turnOrder: connectedPlayerIds,
-                    turn: firstTurnPlayerId,
-                    turnStartTime: firebase.database.ServerValue.TIMESTAMP,
-                    lastAction: null,
-                    currentCard: roomData.gameMode === 'arcade' ? drawNewCard() : null
-                };
-                db.ref(`rooms/${state.currentRoomId}`).update(updates);
-            }
-        }
-    });
-}
+import { ui } from '../ui/elements.js';
+import { showToast } from '../ui/core.js';
 
 function calculateClues(guess, answer) {
     let strikes = 0, balls = 0;
@@ -48,6 +25,27 @@ function calculateClues(guess, answer) {
     return { strikes, balls };
 }
 
+export function startGame() {
+    db.ref(`rooms/${state.currentRoomId}`).get().then(snapshot => {
+        if (snapshot.exists()) {
+            const roomData = snapshot.val();
+            if (roomData.gameState === 'waiting') {
+                const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
+                const firstTurnPlayerId = connectedPlayerIds[0];
+                const updates = {
+                    gameState: 'setup',
+                    turnOrder: connectedPlayerIds,
+                    turn: firstTurnPlayerId,
+                    turnStartTime: firebase.database.ServerValue.TIMESTAMP,
+                    lastAction: null,
+                    currentCard: roomData.gameMode === 'arcade' ? drawNewCard() : null,
+                };
+                db.ref(`rooms/${state.currentRoomId}`).update(updates);
+            }
+        }
+    });
+}
+
 export function submitGuess() {
     const guessString = state.currentGuess.join('');
     const guesserId = state.currentPlayerId;
@@ -59,7 +57,10 @@ export function submitGuess() {
         const targetPlayer = roomData.players[targetId];
         const guesserPlayer = roomData.players[guesserId];
 
-        if (guesserId === targetId) return;
+        if (guesserId === targetId) {
+            // ไม่ควรเกิดขึ้นได้เพราะ UI บล็อกไว้ แต่ป้องกันไว้ก่อน
+            return;
+        }
 
         const opponentNumber = targetPlayer.number;
         const clues = calculateClues(state.currentGuess, opponentNumber.split(''));
@@ -80,7 +81,7 @@ export function submitGuess() {
 
         if (roomData.gameMode === 'arcade') {
             const points = (clues.strikes * 10) + (clues.balls * 5);
-            guesserPlayer.score += points;
+            guesserPlayer.score = (guesserPlayer.score || 0) + points;
         }
 
         roomData.lastAction = {
@@ -115,7 +116,7 @@ export function submitFinalAnswer() {
             actionType = 'final_correct';
             targetPlayer.status = 'eliminated';
             if (roomData.gameMode === 'arcade') {
-                guesserPlayer.score += 100;
+                guesserPlayer.score = (guesserPlayer.score || 0) + 100;
             }
         } else {
             actionType = 'final_wrong';
