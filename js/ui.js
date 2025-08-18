@@ -1,46 +1,66 @@
-// js/ui.js
+// js/ui.js (REVISED with Lazy Initialization)
 
-// นำ UI elements ทั้งหมดกลับมา
-export const ui = {
+// 1. เปลี่ยนจากการเก็บ Element มาเป็นการเก็บ "Selector" (ชื่อ ID)
+const SELECTORS = {
     screens: {
-        splash: document.getElementById('splash-screen'),
-        lobby: document.getElementById('lobby-screen'),
-        createRoom: document.getElementById('create-room-screen'),
-        roomList: document.getElementById('room-list-screen'),
-        joinerSetup: document.getElementById('joiner-setup-screen'),
-        waiting: document.getElementById('waiting-room-screen'),
-        game: document.getElementById('main-game-screen'),
-        gameOver: document.getElementById('game-over-screen')
+        splash: '#splash-screen',
+        lobby: '#lobby-screen',
+        createRoom: '#create-room-screen',
+        waiting: '#waiting-room-screen',
     },
-    goToCreateBtn: document.getElementById('go-to-create-btn'),
-    goToJoinBtn: document.getElementById('go-to-join-btn'),
-    confirmCreateBtn: document.getElementById('confirm-create-btn'),
-    hostNameInput: document.getElementById('host-name-input'),
-    newRoomNameInput: document.getElementById('new-room-name-input'),
-    newRoomPasswordInput: document.getElementById('new-room-password-input'),
-    roomCodeText: document.getElementById('room-code-text'),
-    waitingMessage: document.getElementById('waiting-message'),
-    startGameBtn: document.getElementById('start-game-btn'),
-    toast: document.getElementById('toast'),
-    // เพิ่ม element อื่นๆ ตามต้องการในอนาคต
+    buttons: {
+        goToCreate: '#go-to-create-btn',
+        goToJoin: '#go-to-join-btn',
+        confirmCreate: '#confirm-create-btn',
+    },
+    inputs: {
+        hostName: '#host-name-input',
+        roomName: '#new-room-name-input',
+        roomPassword: '#new-room-password-input',
+    },
+    toasts: {
+        notification: '#toast',
+    }
 };
 
-// ฟังก์ชันแสดง/ซ่อนหน้าจอ (เหมือนเดิม)
+// 2. สร้าง Object `ui` ที่จะทำการ querySelector เมื่อถูกเรียกใช้เท่านั้น
+// นี่คือหัวใจของการแก้ไข: โค้ดจะหา Element ก็ต่อเมื่อเราเรียกใช้มัน เช่น ui.buttons.goToCreate
+export const ui = {
+    screens: {
+        get splash() { return document.querySelector(SELECTORS.screens.splash); },
+        get lobby() { return document.querySelector(SELECTORS.screens.lobby); },
+        get createRoom() { return document.querySelector(SELECTORS.screens.createRoom); },
+        get waiting() { return document.querySelector(SELECTORS.screens.waiting); },
+    },
+    buttons: {
+        get goToCreate() { return document.querySelector(SELECTORS.buttons.goToCreate); },
+        get goToJoin() { return document.querySelector(SELECTORS.buttons.goToJoin); },
+        get confirmCreate() { return document.querySelector(SELECTORS.buttons.confirmCreate); },
+    },
+    inputs: {
+        get hostName() { return document.querySelector(SELECTORS.inputs.hostName); },
+        get roomName() { return document.querySelector(SELECTORS.inputs.roomName); },
+        get roomPassword() { return document.querySelector(SELECTORS.inputs.roomPassword); },
+    },
+    toasts: {
+        get notification() { return document.querySelector(SELECTORS.toasts.notification); },
+    }
+};
+
+// 3. ฟังก์ชัน UI Helpers (ยังคงเหมือนเดิม แต่ปรับให้ใช้ ui object ใหม่)
 export function showScreen(screenName) {
-    Object.values(ui.screens).forEach(screen => {
-        if(screen) screen.classList.remove('show');
-    });
+    // ซ่อนทุกหน้าจอ
+    document.querySelectorAll('.game-screen').forEach(screen => screen.classList.remove('show'));
+    // แสดงหน้าจอที่ต้องการ
     if (ui.screens[screenName]) {
         ui.screens[screenName].classList.add('show');
     }
 }
 
-// ฟังก์ชันแสดง Toast สำหรับแจ้งเตือน
 export function showToast(message) {
-    if (!ui.toast) return;
-    ui.toast.textContent = message;
-    ui.toast.classList.add('show');
-    setTimeout(() => ui.toast.classList.remove('show'), 3000);
+    const toastEl = ui.toasts.notification;
+    if (!toastEl) return;
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 3000);
 }
-
-// (ฟังก์ชัน UI อื่นๆ เช่น updateWaitingRoomUI จะเพิ่มเข้ามาทีหลัง)
