@@ -1,4 +1,3 @@
-// js/state.js
 export const state = {
     currentRoomId: null,
     joiningRoomData: null,
@@ -9,6 +8,8 @@ export const state = {
     currentGuess: [],
     isMuted: false,
     turnTimerInterval: null,
+    selectedGameMode: null,
+    roomData: null, // เก็บข้อมูลห้องล่าสุด
 };
 
 export const constants = {
