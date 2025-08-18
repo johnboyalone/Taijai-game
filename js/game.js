@@ -1,22 +1,7 @@
 // js/game.js
 
-const GUESS_LENGTH = 4;
-const TURN_DURATION = 20;
-
-// --- Game Logic Functions ---
-function generateSecretNumber() {
-    // (โค้ดส่วน generateSecretNumber)
-}
-
-function compareNumbers(guess, secret) {
-    // (โค้ดส่วน compareNumbers)
-}
-
-function handleTurnTimer(startTime, turnDuration, onTick, onEnd) {
-    // (โค้ดส่วนจัดการ Timer)
-}
-
 // --- Audio Management ---
+// (เราจะยังไม่ export ตัวแปร sounds โดยตรง แต่จะ export ฟังก์ชันที่ควบคุมมัน)
 const sounds = {
     background: new Audio('sounds/background-music.mp3'),
     click: new Audio('sounds/click.mp3'),
@@ -25,26 +10,31 @@ const sounds = {
     turn: new Audio('sounds/your-turn.mp3')
 };
 
-function initializeSounds() {
+// ฟังก์ชันสำหรับตั้งค่าเสียงเริ่มต้น
+export function initializeSounds() {
     sounds.background.loop = true;
     sounds.background.volume = 0.3;
     sounds.turn.volume = 0.7;
+    sounds.click.volume = 0.5; // ตั้งค่าความดังเสียงคลิก
 }
 
-function playSound(soundKey, isMuted) {
+// ฟังก์ชันกลางสำหรับเล่นเสียง
+export function playSound(soundKey, isMuted) {
     if (isMuted || !sounds[soundKey]) return;
     const sound = sounds[soundKey];
     sound.currentTime = 0;
     sound.play().catch(error => console.log(`Error playing sound: ${error.message}`));
 }
 
-// Export ฟังก์ชันและตัวแปรเพื่อให้ main.js เรียกใช้ได้
-export {
-    GUESS_LENGTH,
-    TURN_DURATION,
-    generateSecretNumber,
-    compareNumbers,
-    handleTurnTimer,
-    initializeSounds,
-    playSound
-};
+// ฟังก์ชันสำหรับควบคุมเพลงพื้นหลังโดยเฉพาะ
+export function playBackgroundMusic(isMuted) {
+    if (!isMuted && sounds.background.paused) {
+        sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+    }
+}
+
+export function stopBackgroundMusic() {
+    sounds.background.pause();
+}
+
+// (ฟังก์ชันเกี่ยวกับตรรกะเกมอื่นๆ จะเพิ่มเข้ามาทีหลัง)
