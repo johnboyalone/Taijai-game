@@ -1,4 +1,5 @@
-// js/firebase/gameActions.js
+// js/firebase/gameActions.js (เวอร์ชันแก้ไข)
+
 import { db, serverValue } from './config.js';
 import { state, constants } from '../state.js';
 import { ui } from '../ui/elements.js';
@@ -6,7 +7,7 @@ import { showToast } from '../ui/core.js';
 import { updateGuessDisplay } from '../ui/gameScreen.js';
 import { playSound, sounds } from '../audio.js';
 
-// --- Helper Functions ---
+// ... (โค้ดส่วน helper functions: generateRandomNumber, calculateClues เหมือนเดิม) ...
 function generateRandomNumber() {
     let result = [];
     for (let i = 0; i < constants.GUESS_LENGTH; i++) {
@@ -14,12 +15,10 @@ function generateRandomNumber() {
     }
     return result;
 }
-
 function calculateClues(guess, answer) {
     let strikes = 0, balls = 0;
     const answerCopy = [...answer];
     const guessCopy = [...guess];
-    // Check for strikes first
     for (let i = guessCopy.length - 1; i >= 0; i--) {
         if (guessCopy[i] === answerCopy[i]) {
             strikes++;
@@ -27,7 +26,6 @@ function calculateClues(guess, answer) {
             answerCopy.splice(i, 1);
         }
     }
-    // Check for balls
     for (let i = 0; i < guessCopy.length; i++) {
         const foundIndex = answerCopy.indexOf(guessCopy[i]);
         if (foundIndex !== -1) {
@@ -38,7 +36,9 @@ function calculateClues(guess, answer) {
     return { strikes, balls };
 }
 
-// --- Game Actions ---
+
+// --- ลบฟังก์ชัน startGame() ออกจากไฟล์นี้ ---
+
 export function initializePlayerForGame(roomData) {
     const ourNumber = generateRandomNumber();
     ui.ourNumberDisplay.innerHTML = '';
@@ -51,6 +51,7 @@ export function initializePlayerForGame(roomData) {
     db.ref(`rooms/${state.currentRoomId}/players/${state.currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
 }
 
+// ... (โค้ดส่วนที่เหลือ: submitGuess, submitFinalAnswer, skipTurn, requestRematch เหมือนเดิมทุกประการ) ...
 export function submitGuess() {
     const guessString = state.currentGuess.join('');
     db.ref(`rooms/${state.currentRoomId}`).transaction(roomData => {
