@@ -1,40 +1,48 @@
-// js/main.js
+// js/main.js (ฉบับแก้ไข null error)
 
-// 1. Import ให้ครบถ้วน
+// 1. Import ให้ครบถ้วน (เหมือนเดิม)
 import { ui, showScreen, showToast } from './ui.js';
 import { db, createRoom } from './firebase.js';
 
-// 2. เพิ่มตัวแปร Game State
+// 2. เพิ่มตัวแปร Game State (เหมือนเดิม)
 let currentRoomId = null;
 let currentPlayerId = null;
 
-// 3. รอให้ HTML โหลดเสร็จ
+// 3. รอให้ HTML โหลดเสร็จ (เหมือนเดิม)
 document.addEventListener('DOMContentLoaded', () => {
     console.log("main.js: DOM Loaded. Setting up ALL listeners.");
-    setupEventListeners(); // เรียกฟังก์ชันที่รวม Listener ทั้งหมด
+    setupEventListeners();
 });
 
-// 4. สร้างฟังก์ชันสำหรับผูก Event Listener ทั้งหมด
+// 4. ฟังก์ชันสำหรับผูก Event Listener ทั้งหมด (ส่วนที่แก้ไข)
 function setupEventListeners() {
-    // Splash Screen
-    ui.screens.splash.addEventListener('click', () => {
-        showScreen('lobby');
-    });
+    
+    // --- ตรวจสอบก่อนผูก Event ทุกครั้ง ---
 
-    // Lobby Buttons
-    ui.goToCreateBtn.addEventListener('click', () => {
-        showScreen('createRoom');
-    });
-    ui.goToJoinBtn.addEventListener('click', () => {
-        // จะทำในขั้นตอนถัดไป
-        showToast("ฟังก์ชัน 'เข้าร่วมห้อง' ยังไม่เปิดใช้งาน");
-    });
+    if (ui.screens.splash) {
+        ui.screens.splash.addEventListener('click', () => {
+            showScreen('lobby');
+        });
+    }
 
-    // Create Room Button
-    ui.confirmCreateBtn.addEventListener('click', handleCreateRoom);
+    if (ui.goToCreateBtn) {
+        ui.goToCreateBtn.addEventListener('click', () => {
+            showScreen('createRoom');
+        });
+    }
+
+    if (ui.goToJoinBtn) {
+        ui.goToJoinBtn.addEventListener('click', () => {
+            showToast("ฟังก์ชัน 'เข้าร่วมห้อง' ยังไม่เปิดใช้งาน");
+        });
+    }
+
+    if (ui.confirmCreateBtn) {
+        ui.confirmCreateBtn.addEventListener('click', handleCreateRoom);
+    }
 }
 
-// 5. สร้างฟังก์ชัน Handler สำหรับการสร้างห้อง
+// 5. ฟังก์ชัน Handler สำหรับการสร้างห้อง (เหมือนเดิม)
 async function handleCreateRoom() {
     const hostName = ui.hostNameInput.value.trim();
     const roomName = ui.newRoomNameInput.value.trim();
