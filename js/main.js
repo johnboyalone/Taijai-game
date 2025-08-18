@@ -11,27 +11,24 @@ function main() {
     // 1. เริ่มต้นการเชื่อมต่อกับ Firebase
     initializeFirebase();
 
-    // 2. ตั้งค่า Event Listeners ทั้งหมดหลังจากที่ DOM พร้อมใช้งาน
-    // ใช้ DOMContentLoaded เพื่อให้แน่ใจว่า HTML โหลดเสร็จแล้ว
-    document.addEventListener('DOMContentLoaded', () => {
-        setupInitialListeners();
-        showScreen('splash'); // แสดงหน้าจอแรก
+    // 2. ตั้งค่า Event Listeners ทั้งหมด
+    setupInitialListeners();
+    
+    // 3. แสดงหน้าจอแรก
+    showScreen('splash');
 
-        // จัดการการเล่นเสียงพื้นหลังเมื่อผู้ใช้มีการโต้ตอบครั้งแรก
-        // แก้ปัญหาเบราว์เซอร์บล็อกเสียง
-        const playBackgroundMusic = () => {
-            if (sounds.background.paused && !state.isMuted) {
-                sounds.background.play().catch(e => console.log("Autoplay was prevented. User interaction needed."));
-            }
-            // ลบ listener นี้ออกไปหลังจากทำงานแล้ว เพื่อไม่ให้ทำงานซ้ำ
-            document.body.removeEventListener('click', playBackgroundMusic);
-            document.body.removeEventListener('touchend', playBackgroundMusic);
-        };
+    // 4. จัดการการเล่นเสียงพื้นหลังเมื่อผู้ใช้มีการโต้ตอบครั้งแรก
+    const playBackgroundMusic = () => {
+        if (sounds.background.paused && !state.isMuted) {
+            sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+        }
+        document.body.removeEventListener('click', playBackgroundMusic);
+        document.body.removeEventListener('touchend', playBackgroundMusic);
+    };
 
-        document.body.addEventListener('click', playBackgroundMusic);
-        document.body.addEventListener('touchend', playBackgroundMusic);
-    });
+    document.body.addEventListener('click', playBackgroundMusic);
+    document.body.addEventListener('touchend', playBackgroundMusic);
 }
 
-// เริ่มต้นการทำงานของแอป
-main();
+// รอให้โครงสร้าง HTML (DOM) โหลดเสร็จสมบูรณ์ก่อนที่จะเริ่มทำงาน
+document.addEventListener('DOMContentLoaded', main);
