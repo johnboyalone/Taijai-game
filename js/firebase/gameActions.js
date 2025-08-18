@@ -2,8 +2,31 @@ import { firebase } from './config.js';
 import { state } from '../state.js';
 import { showToast } from '../ui/core.js';
 import { updateGuessDisplay } from '../ui/gameScreen.js';
+import { drawNewCard } from '../cards.js';
 
 const db = firebase.database();
+
+export function startGame() {
+    db.ref(`rooms/${state.currentRoomId}`).get().then(snapshot => {
+        if (snapshot.exists()) {
+            const roomData = snapshot.val();
+            if (roomData.gameState === 'waiting') {
+                const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
+                const firstTurnPlayerId = connectedPlayerIds[0];
+                
+                const updates = {
+                    gameState: 'setup',
+                    turnOrder: connectedPlayerIds,
+                    turn: firstTurnPlayerId,
+                    turnStartTime: firebase.database.ServerValue.TIMESTAMP,
+                    lastAction: null,
+                    currentCard: roomData.gameMode === 'arcade' ? drawNewCard() : null
+                };
+                db.ref(`rooms/${state.currentRoomId}`).update(updates);
+            }
+        }
+    });
+}
 
 function calculateClues(guess, answer) {
     let strikes = 0, balls = 0;
@@ -36,10 +59,7 @@ export function submitGuess() {
         const targetPlayer = roomData.players[targetId];
         const guesserPlayer = roomData.players[guesserId];
 
-        if (guesserId === targetId) {
-            showToast("คุณทายตัวเองไม่ได้!");
-            return;
-        }
+        if (guesserId === targetId) return;
 
         const opponentNumber = targetPlayer.number;
         const clues = calculateClues(state.currentGuess, opponentNumber.split(''));
@@ -48,7 +68,7 @@ export function submitGuess() {
         if (!roomData.players[targetId].guesses) {
             roomData.players[targetId].guesses = {};
         }
-        const newGuessKey = db.ref(`rooms/${state.currentRoomId}/${historyPath}`).push().key;
+        const newGuessKey = db.ref().child(historyPath).push().key;
         roomData.players[targetId].guesses[newGuessKey] = {
             guess: guessString,
             strikes: clues.strikes,
@@ -88,17 +108,14 @@ export function submitFinalAnswer() {
         const targetPlayer = roomData.players[targetId];
         const guesserPlayer = roomData.players[guesserId];
 
-        if (guesserId === targetId) {
-            showToast("คุณทายตัวเองไม่ได้!");
-            return;
-        }
+        if (guesserId === targetId) return;
 
         let actionType = '';
         if (finalAnswer === targetPlayer.number) {
             actionType = 'final_correct';
             targetPlayer.status = 'eliminated';
             if (roomData.gameMode === 'arcade') {
-                guesserPlayer.score += 100; // Bonus for elimination
+                guesserPlayer.score += 100;
             }
         } else {
             actionType = 'final_wrong';
@@ -127,8 +144,7 @@ export function submitFinalAnswer() {
 }
 
 export function requestRematch() {
-    const btn = document.getElementById('rematch-btn');
-    btn.disabled = true;
-    btn.textContent = 'กำลังรอเพื่อน...';
+    ui.rematchBtn.disabled = true;
+    ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
     db.ref(`rooms/${state.currentRoomId}/rematch/${state.currentPlayerId}`).set(true);
 }
