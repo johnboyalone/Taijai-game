@@ -1,36 +1,40 @@
-// js/ui/eventListeners.js (Rebuilding - Step 1: Audio)
+// js/ui/eventListeners.js (Rebuilding - Step 3: Firebase Write)
 
 // Import สิ่งที่จำเป็น
-import { screens, ui } from './elements.js'; // <--- เพิ่ม ui เข้ามา
-import { showScreen } from './core.js';
-import { playSound, sounds, toggleMute } from '../audio.js'; // <--- เพิ่มการ import เสียง
-import { state } from '../state.js'; // <--- เพิ่มการ import state
+import { screens, ui } from './elements.js';
+import { showScreen, showToast } from './core.js'; // <--- เพิ่ม showToast
+import { playSound, sounds, toggleMute } from '../audio.js';
+import { state } from '../state.js';
+// --- เพิ่มการ import จาก Firebase ---
+import { loadAndDisplayRooms, createRoom } from '../firebase/roomManager.js'; // <--- เพิ่ม createRoom
 
 export function setupInitialListeners() {
-    // --- เพิ่มปุ่มควบคุมเสียงกลับเข้ามา ---
     ui.soundControl.addEventListener('click', toggleMute);
-
-    // --- อัปเกรด Event ของ Splash Screen ให้มีเสียง ---
     screens.splash.addEventListener('click', () => {
-        playSound(sounds.click); // <--- เพิ่มเสียงคลิก
+        playSound(sounds.click);
         showScreen('lobby');
-
-        // เล่นเพลงพื้นหลังถ้ายังไม่ได้เล่น
         if (sounds.background.paused && !state.isMuted) {
             sounds.background.play().catch(e => console.log("Autoplay was prevented."));
         }
     });
 
-    // --- เพิ่ม Event ให้กับปุ่มในหน้า Lobby ---
+    // --- แก้ไขปุ่มสร้างห้อง ---
     ui.goToCreateBtn.addEventListener('click', () => {
         playSound(sounds.click);
         showScreen('createRoom');
+        // ไม่มี alert แล้ว เพราะเราจะให้ปุ่ม "ยืนยัน" ทำงานจริง
     });
 
     ui.goToJoinBtn.addEventListener('click', () => {
         playSound(sounds.click);
         showScreen('roomList');
-        // เรายังไม่ใส่ฟังก์ชัน loadAndDisplayRooms() ที่เชื่อมกับ Firebase
-        alert("Clicked 'Join Room'. Firebase function is not connected yet.");
+        loadAndDisplayRooms();
+    });
+
+    // --- เพิ่ม Event Listener ให้กับปุ่ม "ยืนยันและสร้างห้อง" ---
+    ui.confirmCreateBtn.addEventListener('click', () => {
+        playSound(sounds.click);
+        // เรียกใช้ฟังก์ชัน createRoom ของจริง
+        createRoom();
     });
 }
