@@ -1,8 +1,31 @@
-// js/audio.js
-import { state } from './state.js';
-import { ui } from './ui/elements.js';
+// js/config.js
 
-export const sounds = {
+// FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
+  authDomain: "taijai.firebaseapp.com",
+  databaseURL: "https://taijai-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "taijai",
+  storageBucket: "taijai.appspot.com",
+  messagingSenderId: "262573756581",
+  appId: "1:262573756581:web:c17bfc795b5cf139693d4c"
+};
+
+// GAME STATE VARIABLES
+let currentRoomId = null;
+let joiningRoomData = null;
+let currentPlayerId = null;
+let currentTargetId = null;
+let roomListener = null;
+let roomListListener = null;
+let currentGuess = [];
+const GUESS_LENGTH = 4;
+let isMuted = false;
+let turnTimerInterval = null;
+const TURN_DURATION = 20;
+
+// AUDIO REFERENCES
+const sounds = {
     background: new Audio('sounds/background-music.mp3'),
     click: new Audio('sounds/click.mp3'),
     win: new Audio('sounds/win-wow.mp3'),
@@ -10,34 +33,6 @@ export const sounds = {
     turn: new Audio('sounds/your-turn.mp3')
 };
 
-export function initializeAudio() {
-    sounds.background.loop = true;
-    sounds.background.volume = 0.3;
-    sounds.turn.volume = 0.7;
-    sounds.click.volume = 0.5;
-
-    // เพิ่มการจัดการ Error หากโหลดไฟล์เสียงไม่สำเร็จ
-    Object.values(sounds).forEach(sound => {
-        sound.onerror = () => {
-            console.warn(`Could not load sound: ${sound.src}`);
-        };
-    });
-}
-
-export function playSound(sound) {
-    if (state.isMuted || !sound || !sound.src) return;
-    sound.currentTime = 0;
-    sound.play().catch(error => console.log(`Error playing sound: ${error.message}`));
-}
-
-export function toggleMute() {
-    state.isMuted = !state.isMuted;
-    if (state.isMuted) {
-        sounds.background.pause();
-        ui.soundIcon.textContent = '🔇';
-    } else {
-        sounds.background.play().catch(e => console.log("Autoplay was prevented."));
-        ui.soundIcon.textContent = '🔊';
-    }
-    playSound(sounds.click);
-}
+// UI ELEMENT REFERENCES
+const screens = { /* ...คัดลอก object screens ทั้งหมดมาวางที่นี่... */ };
+const ui = { /* ...คัดลอก object ui ทั้งหมดมาวางที่นี่... */ };
