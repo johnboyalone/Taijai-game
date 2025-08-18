@@ -1,52 +1,42 @@
-// js/main.js (ฉบับแก้ไข null error)
+// js/main.js (REVISED to work with new UI structure)
 
-// 1. Import ให้ครบถ้วน (เหมือนเดิม)
 import { ui, showScreen, showToast } from './ui.js';
 import { db, createRoom } from './firebase.js';
 
-// 2. เพิ่มตัวแปร Game State (เหมือนเดิม)
 let currentRoomId = null;
 let currentPlayerId = null;
 
-// 3. รอให้ HTML โหลดเสร็จ (เหมือนเดิม)
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("main.js: DOM Loaded. Setting up ALL listeners.");
-    setupEventListeners();
-});
-
-// 4. ฟังก์ชันสำหรับผูก Event Listener ทั้งหมด (ส่วนที่แก้ไข)
+// ฟังก์ชันสำหรับผูก Event Listener ทั้งหมด
 function setupEventListeners() {
-    
-    // --- ตรวจสอบก่อนผูก Event ทุกครั้ง ---
-
+    // การตรวจสอบ if ยังคงเป็นสิ่งที่ดี แต่ตอนนี้มันจะทำงานได้อย่างถูกต้อง
     if (ui.screens.splash) {
         ui.screens.splash.addEventListener('click', () => {
             showScreen('lobby');
         });
     }
 
-    if (ui.goToCreateBtn) {
-        ui.goToCreateBtn.addEventListener('click', () => {
+    if (ui.buttons.goToCreate) {
+        ui.buttons.goToCreate.addEventListener('click', () => {
             showScreen('createRoom');
         });
     }
 
-    if (ui.goToJoinBtn) {
-        ui.goToJoinBtn.addEventListener('click', () => {
+    if (ui.buttons.goToJoin) {
+        ui.buttons.goToJoin.addEventListener('click', () => {
             showToast("ฟังก์ชัน 'เข้าร่วมห้อง' ยังไม่เปิดใช้งาน");
         });
     }
 
-    if (ui.confirmCreateBtn) {
-        ui.confirmCreateBtn.addEventListener('click', handleCreateRoom);
+    if (ui.buttons.confirmCreate) {
+        ui.buttons.confirmCreate.addEventListener('click', handleCreateRoom);
     }
 }
 
-// 5. ฟังก์ชัน Handler สำหรับการสร้างห้อง (เหมือนเดิม)
+// ฟังก์ชัน Handler สำหรับการสร้างห้อง
 async function handleCreateRoom() {
-    const hostName = ui.hostNameInput.value.trim();
-    const roomName = ui.newRoomNameInput.value.trim();
-    const password = ui.newRoomPasswordInput.value;
+    const hostName = ui.inputs.hostName.value.trim();
+    const roomName = ui.inputs.roomName.value.trim();
+    const password = ui.inputs.roomPassword.value;
 
     if (!hostName || !roomName || !/^\d{4}$/.test(password)) {
         showToast('กรุณากรอกข้อมูลให้ครบ (รหัสผ่าน 4 ตัวเลข)');
@@ -57,11 +47,12 @@ async function handleCreateRoom() {
         const result = await createRoom(hostName, roomName, password);
         currentRoomId = result.roomId;
         currentPlayerId = result.playerId;
-
         showToast(`สร้างห้อง "${roomName}" สำเร็จ!`);
         showScreen('waiting');
-        // listenToRoomUpdates(currentRoomId, onRoomUpdate); // <-- ขั้นตอนต่อไป
     } catch (error) {
         showToast('เกิดข้อผิดพลาด: ' + error.message);
     }
 }
+
+// รอให้ HTML โหลดเสร็จแล้วค่อยเริ่มทำงาน
+document.addEventListener('DOMContentLoaded', setupEventListeners);
