@@ -1,6 +1,6 @@
 // js/ui/elements.js
 
-// เก็บการอ้างอิงถึง Screens ทั้งหมด
+// อ้างอิงถึงหน้าจอต่างๆ
 export const screens = {
     splash: document.getElementById('splash-screen'),
     lobby: document.getElementById('lobby-screen'),
@@ -12,29 +12,31 @@ export const screens = {
     gameOver: document.getElementById('game-over-screen')
 };
 
-// เก็บการอ้างอิงถึง UI elements อื่นๆ
+// อ้างอิงถึง UI elements อื่นๆ
 export const ui = {
-    // Buttons & Inputs
+    // Splash
+    splashScreen: screens.splash,
+
+    // Lobby
     goToCreateBtn: document.getElementById('go-to-create-btn'),
     goToJoinBtn: document.getElementById('go-to-join-btn'),
-    confirmCreateBtn: document.getElementById('confirm-create-btn'),
+
+    // Create Room
     hostNameInput: document.getElementById('host-name-input'),
     newRoomNameInput: document.getElementById('new-room-name-input'),
     newRoomPasswordInput: document.getElementById('new-room-password-input'),
-    passwordModalSubmitBtn: document.getElementById('password-modal-submit-btn'),
-    confirmJoinBtn: document.getElementById('confirm-join-btn'),
-    startGameBtn: document.getElementById('start-game-btn'),
-    submitFinalAnswerBtn: document.getElementById('submit-final-answer-btn'),
-    rematchBtn: document.getElementById('rematch-btn'),
-    backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
-    joinerNameInput: document.getElementById('joiner-name-input'),
-    passwordModalInput: document.getElementById('password-modal-input'),
+    modeOptionBtns: document.querySelectorAll('.mode-option-btn'),
+    confirmCreateBtn: document.getElementById('confirm-create-btn'),
 
-    // Displays & Containers
+    // Room List
     roomListContent: document.getElementById('room-list-content'),
-    passwordModal: document.getElementById('password-modal'),
-    passwordModalRoomName: document.getElementById('password-modal-room-name'),
+
+    // Joiner Setup
     joinerRoomNameDisplay: document.getElementById('joiner-room-name-display'),
+    joinerNameInput: document.getElementById('joiner-name-input'),
+    confirmJoinBtn: document.getElementById('confirm-join-btn'),
+
+    // Waiting Room
     roomCodeText: document.getElementById('room-code-text'),
     playerSlots: {
         player1: document.getElementById('player1-slot'),
@@ -43,27 +45,47 @@ export const ui = {
         player4: document.getElementById('player4-slot')
     },
     waitingMessage: document.getElementById('waiting-message'),
+    startGameBtn: document.getElementById('start-game-btn'),
+
+    // Main Game
     turnIndicator: document.getElementById('turn-indicator'),
     turnText: document.getElementById('turn-text'),
     turnTimerDisplay: document.getElementById('turn-timer-display'),
     ourNumberDisplay: document.getElementById('our-number-display'),
-    playerSummaryGrid: document.getElementById('player-summary-grid'),
     historyLog: document.getElementById('history-log'),
     historyTargetName: document.getElementById('history-target-name'),
     guessNumberContainer: document.getElementById('guess-number-container'),
     numberPadContainer: document.getElementById('number-pad-container'),
     chanceDots: [document.getElementById('chance-1'), document.getElementById('chance-2'), document.getElementById('chance-3')],
+    submitFinalAnswerBtn: document.getElementById('submit-final-answer-btn'),
     spectatorOverlay: document.getElementById('spectator-overlay'),
     spectatorMessage: document.getElementById('spectator-message'),
+
+    // Game Over
     gameOverTitle: document.getElementById('game-over-title'),
     winnerName: document.getElementById('winner-name'),
     gameOverMessage: document.getElementById('game-over-message'),
     gameOverNumbersContainer: document.getElementById('game-over-numbers-container'),
+    rematchBtn: document.getElementById('rematch-btn'),
+    backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
+
+    // Modals
+    passwordModal: document.getElementById('password-modal'),
+    passwordModalRoomName: document.getElementById('password-modal-room-name'),
+    passwordModalInput: document.getElementById('password-modal-input'),
+    passwordModalSubmitBtn: document.getElementById('password-modal-submit-btn'),
 
     // Toasts & Sound
     toast: document.getElementById('toast'),
     actionToast: document.getElementById('action-toast'),
     actionToastText: document.getElementById('action-toast-text'),
     soundControl: document.getElementById('sound-control'),
-    soundIcon: document.getElementById('sound-icon')
+    soundIcon: document.getElementById('sound-icon'),
+
+    // Arcade Mode UI Elements
+    scoreboardContent: document.getElementById('scoreboard-content'),
+    cardDisplaySection: document.getElementById('card-display-section'),
+    cardContent: document.getElementById('card-content'),
+    guessControls: document.querySelector('.guess-controls'),
+    finalAnswerSection: document.querySelector('.final-answer-section'),
 };
