@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>เกม ทายเลขทายใจ v2.0</title>
+    <title>เกม ทายเลขทายใจ v2.0 (Debug)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <!-- เรียกใช้ CSS ที่แบ่งไฟล์แล้วตามลำดับ -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/screens.css">
@@ -119,19 +118,14 @@
             <span id="turn-timer-display"></span>
         </div>
         <div class="main-container">
-            <!-- Arcade Mode UI (จะถูกซ่อน/แสดงโดย JS) -->
             <div id="scoreboard-section" class="section arcade-only">
                 <h2 class="section-title">📊 ตารางคะแนน</h2>
                 <div id="scoreboard-content"></div>
             </div>
             <div id="card-display-section" class="section arcade-only">
                 <h2 class="section-title">🃏 การ์ดช่วยเหลือ</h2>
-                <div id="card-content">
-                    <p class="no-card-text">เฉพาะคนที่เป็นเป้าหมายเท่านั้นที่จะได้รับการ์ด</p>
-                </div>
+                <div id="card-content"></div>
             </div>
-
-            <!-- Common UI -->
             <div class="section"><h2 class="section-title">⭐ เลขของเรา</h2><div id="our-number-display" class="input-container"></div></div>
             <div class="section"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
             <div class="section guess-controls">
@@ -153,9 +147,7 @@
             <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
             <h2 id="winner-name" class="winner-name"></h2>
             <p id="game-over-message" class="game-over-message"></p>
-            <!-- Arcade Mode UI -->
             <div id="final-scores-container" class="arcade-only"></div>
-            <!-- Common UI -->
             <div class="game-over-numbers" id="game-over-numbers-container"></div>
             <div class="game-over-buttons">
                 <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
@@ -178,6 +170,24 @@
 
     <!-- Sound Control Button -->
     <div id="sound-control" class="sound-control"><span id="sound-icon">🔊</span></div>
+
+    <!-- Mobile Debug Console (เวอร์ชันย่อ-ขยายได้) -->
+    <div id="mobile-debug-container" class="expanded">
+        <div id="mobile-debug-header">
+            <span>--- Mobile Debug Console ---</span>
+            <button id="toggle-debug-btn">ย่อ</button>
+        </div>
+        <div id="mobile-debug-output"></div>
+    </div>
+    <style>
+        #mobile-debug-container { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; background-color: rgba(0,0,0,0.85); border-top: 2px solid #f00; transition: height 0.3s ease; }
+        #mobile-debug-container.expanded { height: 25%; }
+        #mobile-debug-container.collapsed { height: 30px; }
+        #mobile-debug-header { display: flex; justify-content: space-between; align-items: center; padding: 0 8px; height: 30px; color: #fff; font-family: monospace; font-size: 12px; }
+        #toggle-debug-btn { background-color: #c00; color: white; border: none; padding: 4px 8px; cursor: pointer; }
+        #mobile-debug-output { height: calc(100% - 30px); overflow-y: scroll; padding: 5px; box-sizing: border-box; color: #0f0; font-family: monospace; font-size: 12px; }
+        #mobile-debug-container.collapsed #mobile-debug-output { display: none; }
+    </style>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
