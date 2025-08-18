@@ -1,6 +1,5 @@
-// js/audio.js
 import { state } from './state.js';
-import { ui } from './ui.js';
+import { ui } from './ui/elements.js';
 
 export const sounds = {
     background: new Audio('sounds/background-music.mp3'),
@@ -10,12 +9,10 @@ export const sounds = {
     turn: new Audio('sounds/your-turn.mp3')
 };
 
-export function initializeAudio() {
-    sounds.background.loop = true;
-    sounds.background.volume = 0.3;
-    sounds.turn.volume = 0.7;
-    sounds.click.volume = 0.5;
-}
+sounds.background.loop = true;
+sounds.background.volume = 0.3;
+sounds.turn.volume = 0.7;
+sounds.click.volume = 0.5;
 
 export function playSound(sound) {
     if (state.isMuted) return;
@@ -32,6 +29,5 @@ export function toggleMute() {
         sounds.background.play().catch(e => console.log("Autoplay was prevented."));
         ui.soundIcon.textContent = '🔊';
     }
-    // Play click sound regardless of mute state to give feedback on the button press itself
     sounds.click.play();
 }
