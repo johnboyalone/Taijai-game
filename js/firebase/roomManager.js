@@ -1,17 +1,49 @@
-// js/firebase/roomManager.js (Rebuilding - Step 1: Restore loadAndDisplayRooms)
+// js/firebase/roomManager.js (Final Version)
 
 import { db } from './config.js';
 import { state } from '../state.js';
 import { ui } from '../ui/elements.js';
 import { showScreen, showToast } from '../ui/core.js';
 import { playSound, sounds } from '../audio.js';
-
-// --- ฟังก์ชันนี้ยังเป็นตัวทดสอบ ---
-export function createRoom() {
-    alert("createRoom function is still a test function.");
-}
+import { listenToRoomUpdates } from './gameState.js'; // <--- Import ตัวสำคัญ
 
 // --- ใส่โค้ดของจริงกลับเข้าไปในฟังก์ชันนี้ ---
+export function createRoom() {
+    const hostName = ui.hostNameInput.value.trim();
+    const roomName = ui.newRoomNameInput.value.trim();
+    const password = ui.newRoomPasswordInput.value;
+
+    if (!hostName || !roomName || !/^\d{4}$/.test(password)) {
+        showToast('กรุณากรอกข้อมูลให้ครบ (รหัสผ่าน 4 ตัวเลข)');
+        return;
+    }
+
+    const newRoomId = db.ref('rooms').push().key;
+    state.currentPlayerId = 'player1';
+    state.currentRoomId = newRoomId;
+
+    const roomData = {
+        roomName, hostName, password,
+        players: {
+            'player1': { id: 'player1', name: hostName, connected: true, isHost: true, numberSet: false, finalChances: 3, status: 'playing' },
+            'player2': { id: 'player2', name: 'ผู้เล่น 2', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
+            'player3': { id: 'player3', name: 'ผู้เล่น 3', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
+            'player4': { id: 'player4', name: 'ผู้เล่น 4', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' }
+        },
+        playerCount: 1,
+        gameState: 'waiting',
+        turn: null, turnOrder: [], rematch: {}, lastAction: null
+    };
+
+    db.ref('rooms/' + newRoomId).set(roomData).then(() => {
+        showToast(`สร้างห้อง "${roomName}" สำเร็จ!`);
+        // --- จุดสำคัญ: เรียกใช้ listener เพื่อเริ่มการอัปเดตแบบเรียลไทม์ ---
+        listenToRoomUpdates();
+        showScreen('waiting');
+    }).catch(error => showToast('เกิดข้อผิดพลาด: ' + error.message));
+}
+
+// --- ฟังก์ชันที่เหลือก็ใส่โค้ดของจริงกลับเข้าไปด้วย ---
 export function loadAndDisplayRooms() {
     const roomsRef = db.ref('rooms').orderByChild('gameState').equalTo('waiting');
     if (state.roomListListener) roomsRef.off('value', state.roomListListener);
@@ -52,10 +84,66 @@ export function loadAndDisplayRooms() {
     });
 }
 
-// --- ฟังก์ชันที่เหลือยังไม่ต้องใส่โค้ดจริง ---
 export function handlePasswordSubmit() {
-    // ยังไม่ต้องทำอะไร
+    const roomId = ui.passwordModal.dataset.roomId;
+    const roomName = ui.passwordModal.dataset.roomName;
+    const enteredPassword = ui.passwordModalInput.value;
+    db.ref(`rooms/${roomId}/password`).get().then(snapshot => {
+        if (snapshot.val() === enteredPassword) {
+            ui.passwordModalInput.value = '';
+            ui.passwordModal.classList.remove('show');
+            state.joiningRoomData = { id: roomId, name: roomName };
+            ui.joinerRoomNameDisplay.textContent = roomName;
+            showScreen('joinerSetup');
+        } else {
+            showToast('รหัสผ่านไม่ถูกต้อง!');
+        }
+    });
 }
+
 export function joinRoom() {
-    // ยังไม่ต้องทำอะไร
+    const joinerName = ui.joinerNameInput.value.trim();
+    if (!joinerName) {
+        showToast('กรุณากรอกชื่อของคุณ');
+        return;
+    }
+
+    const roomId = state.joiningRoomData.id;
+    state.currentRoomId = roomId;
+    if (state.roomListListener) db.ref('rooms').off('value', state.roomListListener);
+
+    const roomRef = db.ref(`rooms/${roomId}`);
+    roomRef.transaction(currentRoomData => {
+        if (currentRoomData) {
+            if (currentRoomData.gameState !== 'waiting') return;
+            let availableSlotId = null;
+            for (const playerId in currentRoomData.players) {
+                if (!currentRoomData.players[playerId].connected) {
+                    availableSlotId = playerId;
+                    break;
+                }
+            }
+            if (availableSlotId) {
+                state.currentPlayerId = availableSlotId;
+                currentRoomData.players[availableSlotId].connected = true;
+                currentRoomData.players[availableSlotId].name = joinerName;
+                currentRoomData.playerCount = (currentRoomData.playerCount || 0) + 1;
+            } else {
+                return;
+            }
+        }
+        return currentRoomData;
+    }, (error, committed) => {
+        if (error) {
+            showToast("เกิดข้อผิดพลาด: " + error.message);
+            showScreen('lobby');
+        } else if (!committed) {
+            showToast("ไม่สามารถเข้าร่วมห้องได้ อาจจะเต็มหรือเริ่มเกมไปแล้ว");
+            showScreen('lobby');
+        } else {
+            showToast(`เข้าร่วมห้องสำเร็จ!`);
+            listenToRoomUpdates();
+            showScreen('waiting');
+        }
+    });
 }
