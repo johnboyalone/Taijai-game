@@ -1,89 +1,51 @@
 // js/ui.js
 
-// =================================================================
-// ======== UI ELEMENT REFERENCES ========
-// =================================================================
-// เราจะประกาศตัวแปร UI ทั้งหมดที่นี่ และส่งออกไปให้ไฟล์อื่นใช้
-export const ui = {
-    screens: {
-        splash: document.getElementById('splash-screen'),
-        lobby: document.getElementById('lobby-screen'),
-        createRoom: document.getElementById('create-room-screen'),
-        roomList: document.getElementById('room-list-screen'),
-        joinerSetup: document.getElementById('joiner-setup-screen'),
-        waiting: document.getElementById('waiting-room-screen'),
-        game: document.getElementById('main-game-screen'),
-        gameOver: document.getElementById('game-over-screen')
-    },
-    goToCreateBtn: document.getElementById('go-to-create-btn'),
-    goToJoinBtn: document.getElementById('go-to-join-btn'),
-    confirmCreateBtn: document.getElementById('confirm-create-btn'),
-    hostNameInput: document.getElementById('host-name-input'),
-    newRoomNameInput: document.getElementById('new-room-name-input'),
-    newRoomPasswordInput: document.getElementById('new-room-password-input'),
-    roomListContent: document.getElementById('room-list-content'),
-    passwordModal: document.getElementById('password-modal'),
-    passwordModalRoomName: document.getElementById('password-modal-room-name'),
-    passwordModalInput: document.getElementById('password-modal-input'),
-    passwordModalSubmitBtn: document.getElementById('password-modal-submit-btn'),
-    joinerRoomNameDisplay: document.getElementById('joiner-room-name-display'),
-    joinerNameInput: document.getElementById('joiner-name-input'),
-    confirmJoinBtn: document.getElementById('confirm-join-btn'),
-    roomCodeText: document.getElementById('room-code-text'),
-    playerSlots: {
-        player1: document.getElementById('player1-slot'),
-        player2: document.getElementById('player2-slot'),
-        player3: document.getElementById('player3-slot'),
-        player4: document.getElementById('player4-slot')
-    },
-    waitingMessage: document.getElementById('waiting-message'),
-    startGameBtn: document.getElementById('start-game-btn'),
-    turnIndicator: document.getElementById('turn-indicator'),
-    turnText: document.getElementById('turn-text'),
-    turnTimerDisplay: document.getElementById('turn-timer-display'),
-    ourNumberDisplay: document.getElementById('our-number-display'),
-    playerSummaryGrid: document.getElementById('player-summary-grid'),
-    historyLog: document.getElementById('history-log'),
-    historyTargetName: document.getElementById('history-target-name'),
-    guessNumberContainer: document.getElementById('guess-number-container'),
-    numberPadContainer: document.getElementById('number-pad-container'),
-    chanceDots: [document.getElementById('chance-1'), document.getElementById('chance-2'), document.getElementById('chance-3')],
-    submitFinalAnswerBtn: document.getElementById('submit-final-answer-btn'),
-    spectatorOverlay: document.getElementById('spectator-overlay'),
-    spectatorMessage: document.getElementById('spectator-message'),
-    gameOverTitle: document.getElementById('game-over-title'),
-    winnerName: document.getElementById('winner-name'),
-    gameOverMessage: document.getElementById('game-over-message'),
-    gameOverNumbersContainer: document.getElementById('game-over-numbers-container'),
-    rematchBtn: document.getElementById('rematch-btn'),
-    backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
-    toast: document.getElementById('toast'),
-    actionToast: document.getElementById('action-toast'),
-    actionToastText: document.getElementById('action-toast-text'),
-    soundControl: document.getElementById('sound-control'),
-    soundIcon: document.getElementById('sound-icon')
-};
-
-// =================================================================
-// ======== UI HELPER FUNCTIONS ========
-// =================================================================
-// ฟังก์ชันเหล่านี้จะถูกส่งออกไปให้ main.js เรียกใช้
-export function showScreen(screenName) {
-    // ซ่อนทุกหน้าจอ
-    Object.values(ui.screens).forEach(screen => screen.classList.remove('show'));
-    // แสดงเฉพาะหน้าจอที่ต้องการ
-    if (ui.screens[screenName]) {
-        ui.screens[screenName].classList.add('show');
-    } else {
-        console.error(`Screen "${screenName}" not found!`);
-    }
-}
+// ... (โค้ดเดิมทั้งหมด) ...
 
 export function showToast(message) {
-    ui.toast.textContent = message;
-    ui.toast.classList.add('show');
-    setTimeout(() => ui.toast.classList.remove('show'), 3000);
+    // ... (โค้ดเดิม) ...
 }
 
-// เพิ่มฟังก์ชันอื่นๆ ที่จะใช้ในอนาคตที่นี่ เช่น updateWaitingRoomUI, displayGameOver ฯลฯ
-// แล้วอย่าลืม export ออกไปด้วยนะครับ
+// (เพิ่มใหม่) ฟังก์ชันสำหรับอัปเดตหน้า Waiting Room
+export function updateWaitingRoomUI(roomData, currentPlayerId) {
+    if (!roomData) return;
+
+    ui.roomCodeText.textContent = roomData.roomName;
+    const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
+
+    // อัปเดตรายชื่อผู้เล่น
+    for (const playerId in ui.playerSlots) {
+        const slot = ui.playerSlots[playerId];
+        const playerData = roomData.players[playerId];
+        const avatar = slot.querySelector('.player-avatar-initial');
+        const nameEl = slot.querySelector('.player-name');
+        const statusEl = slot.querySelector('.player-status');
+
+        if (playerData && playerData.connected) {
+            avatar.textContent = playerData.name.charAt(0).toUpperCase();
+            avatar.style.backgroundColor = playerData.isHost ? '#89cff0' : '#f8c8dc';
+            nameEl.textContent = playerData.isHost ? `${playerData.name} (เจ้าของห้อง)` : playerData.name;
+            statusEl.textContent = 'เชื่อมต่อแล้ว';
+            statusEl.className = 'player-status connected';
+        } else {
+            const playerNumber = playerId.replace('player', '');
+            avatar.textContent = '?';
+            avatar.style.backgroundColor = '#e2e8f0';
+            nameEl.textContent = `ผู้เล่น ${playerNumber}`;
+            statusEl.textContent = 'กำลังรอ...';
+            statusEl.className = 'player-status waiting';
+        }
+    }
+
+    // เปิด/ปิดปุ่ม "เริ่มเกม" สำหรับ Host
+    if (currentPlayerId === 'player1') { // player1 คือ Host เสมอ
+        const canStart = connectedPlayers.length >= 2;
+        ui.startGameBtn.disabled = !canStart;
+        ui.waitingMessage.textContent = canStart 
+            ? `มีผู้เล่น ${connectedPlayers.length} คนแล้ว เริ่มเกมได้เลย!`
+            : 'รอผู้เล่นอย่างน้อย 2 คนเพื่อเริ่มเกม...';
+    } else {
+        ui.startGameBtn.disabled = true;
+        ui.waitingMessage.textContent = 'รอเจ้าของห้องเริ่มเกม...';
+    }
+}
