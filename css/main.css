@@ -1,4 +1,10 @@
-/* css/main.css */
+/* public/css/main.css */
+
+/* 
+  ไฟล์นี้ทำหน้าที่เป็นไฟล์หลักในการเรียกใช้ CSS ทั้งหมด
+  ลำดับการ import มีความสำคัญมาก
+*/
+
 @import url('base.css');
 @import url('components.css');
 @import url('screens.css');
