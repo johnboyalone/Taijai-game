@@ -1,9 +1,7 @@
-// js/ui/core.js
 import { screens, ui } from './elements.js';
 import { state } from '../state.js';
 import { playSound, sounds } from '../audio.js';
 
-// --- Screen & Notification Management ---
 export function showScreen(screenName) {
     Object.values(screens).forEach(screen => screen.classList.remove('show'));
     if (screens[screenName]) screens[screenName].classList.add('show');
@@ -21,7 +19,6 @@ export function showActionToast(message, duration = 2000) {
     setTimeout(() => ui.actionToast.classList.remove('show'), duration);
 }
 
-// --- UI Update Functions (Non-Game Screen) ---
 export function updateWaitingRoomUI(roomData) {
     ui.roomCodeText.textContent = roomData.roomName;
     for (const playerId in ui.playerSlots) {
@@ -71,6 +68,19 @@ export function displayGameOver(roomData) {
     ui.gameOverTitle.textContent = isWinner ? "🎉 คุณชนะ! 🎉" : "จบเกมแล้ว";
     ui.winnerName.textContent = `ผู้ชนะคือ: ${winnerName}`;
     ui.gameOverMessage.textContent = roomData.reason;
+
+    const finalScoresContainer = document.getElementById('final-scores-container');
+    if (roomData.gameMode === 'arcade' && roomData.finalScores) {
+        finalScoresContainer.style.display = 'block';
+        finalScoresContainer.innerHTML = '<h3>คะแนนสุดท้าย:</h3>';
+        const sortedScores = Object.values(roomData.finalScores).sort((a, b) => b.score - a.score);
+        sortedScores.forEach((player, index) => {
+            finalScoresContainer.innerHTML += `<p>${index + 1}. ${player.name}: ${player.score} แต้ม</p>`;
+        });
+    } else {
+        finalScoresContainer.style.display = 'none';
+    }
+
     ui.gameOverNumbersContainer.innerHTML = '';
     Object.values(roomData.players).forEach(player => {
         if (player.connected) {
