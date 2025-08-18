@@ -3,39 +3,34 @@
 // =================================================================
 // ======== IMPORTS ========
 // =================================================================
-// นำเข้าตัวแปร ui และฟังก์ชันที่จำเป็นจาก ui.js
-import { ui, showScreen, showToast } from './ui.js'; 
-// (ในอนาคตเราจะ import จาก game.js และ firebase.js ด้วย)
+import { ui, showScreen, showToast } from './ui.js';
+import { initializeSounds, playSound, playBackgroundMusic } from './game.js';
+import { createRoom, loadAndDisplayRooms } from './firebase.js'; // <-- Import ฟังก์ชันจาก Firebase
 
 // =================================================================
 // ======== GAME STATE VARIABLES ========
 // =================================================================
 let isMuted = false;
-// (ตัวแปรสถานะอื่นๆ จะมาอยู่ที่นี่ เช่น currentRoomId, currentPlayerId)
+let currentRoomId = null;
+let currentPlayerId = null;
 
 // =================================================================
 // ======== INITIALIZATION ========
 // =================================================================
-// รอให้ HTML โหลดเสร็จสมบูรณ์ก่อนที่จะเริ่มทำงานกับ Element ใดๆ
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App is ready. Setting up listeners.");
+    initializeSounds(); // <-- เรียกใช้ฟังก์ชันตั้งค่าเสียง
     setupEventListeners();
-    showScreen('splash'); // เริ่มต้นด้วยการแสดง Splash Screen
+    showScreen('splash');
 });
 
 // =================================================================
 // ======== EVENT LISTENERS SETUP ========
 // =================================================================
-// ฟังก์ชันนี้มีหน้าที่รวมการผูก Event Listener ทั้งหมดไว้ในที่เดียว
 function setupEventListeners() {
-    
     // --- Splash Screen Listener ---
-    // นี่คือส่วนที่แก้ไขปัญหาโดยตรง
-    // เราใช้ ui.screens.splash ที่ import เข้ามา
     if (ui.screens.splash) {
         ui.screens.splash.addEventListener('click', handleSplashClick);
-    } else {
-        console.error("CRITICAL: Splash Screen element not found in UI object.");
     }
 
     // --- Sound Control Listener ---
@@ -43,47 +38,72 @@ function setupEventListeners() {
         ui.soundControl.addEventListener('click', toggleMute);
     }
 
-    // --- Lobby Buttons Listeners ---
-    // เราจะผูก Event ของปุ่มอื่นๆ ที่นี่ต่อไป
-    // if (ui.goToCreateBtn) {
-    //     ui.goToCreateBtn.addEventListener('click', () => {
-    //         // playSound('click', isMuted);
-    //         showScreen('createRoom');
-    //     });
-    // }
-    // if (ui.goToJoinBtn) {
-    //     ui.goToJoinBtn.addEventListener('click', () => {
-    //         // playSound('click', isMuted);
-    //         showScreen('roomList');
-    //         // loadAndDisplayRooms();
-    //     });
-    // }
+    // --- Lobby Buttons Listeners (ส่วนที่เพิ่มเข้ามา) ---
+    if (ui.goToCreateBtn) {
+        ui.goToCreateBtn.addEventListener('click', () => {
+            playSound('click', isMuted);
+            showScreen('createRoom');
+        });
+    }
+    if (ui.goToJoinBtn) {
+        ui.goToJoinBtn.addEventListener('click', () => {
+            playSound('click', isMuted);
+            showScreen('roomList');
+            loadAndDisplayRooms(); // <-- เรียกใช้ฟังก์ชันโหลดห้อง
+        });
+    }
+
+    // --- Create Room Listener (ส่วนที่เพิ่มเข้ามา) ---
+    if (ui.confirmCreateBtn) {
+        ui.confirmCreateBtn.addEventListener('click', handleCreateRoom);
+    }
 }
 
 // =================================================================
 // ======== EVENT HANDLER FUNCTIONS ========
 // =================================================================
-// ฟังก์ชันที่ถูกเรียกเมื่อมีการคลิกที่ Splash Screen
 function handleSplashClick() {
-    console.log("Splash screen clicked, moving to lobby.");
-    // playSound('click', isMuted); // จะเปิดใช้งานเมื่อ import เสียงเข้ามา
+    playSound('click', isMuted);
     showScreen('lobby');
-    
-    // ลองเล่นเสียงพื้นหลัง (จะเปิดใช้งานเมื่อ import เสียงเข้ามา)
-    // if (sounds.background.paused && !isMuted) {
-    //     sounds.background.play().catch(e => console.log("Autoplay was prevented."));
-    // }
+    playBackgroundMusic(isMuted); // <-- เริ่มเล่นเพลงพื้นหลัง
 }
 
 function toggleMute() {
     isMuted = !isMuted;
     if (isMuted) {
-        // sounds.background.pause();
+        // stopBackgroundMusic(); // ฟังก์ชันนี้ยังไม่มี แต่จะเพิ่มทีหลัง
         ui.soundIcon.textContent = '🔇';
     } else {
-        // sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+        playBackgroundMusic(isMuted);
         ui.soundIcon.textContent = '🔊';
     }
-    // playSound('click', isMuted);
+    playSound('click', isMuted);
     console.log(`Sound is now ${isMuted ? 'Muted' : 'On'}`);
+}
+
+// --- ฟังก์ชันใหม่สำหรับจัดการการสร้างห้อง ---
+async function handleCreateRoom() {
+    playSound('click', isMuted);
+
+    const hostName = ui.hostNameInput.value.trim();
+    const roomName = ui.newRoomNameInput.value.trim();
+    const password = ui.newRoomPasswordInput.value;
+
+    if (!hostName || !roomName || !/^\d{4}$/.test(password)) {
+        showToast('กรุณากรอกข้อมูลให้ครบ (รหัสผ่าน 4 ตัวเลข)');
+        return;
+    }
+
+    try {
+        // เรียกใช้ฟังก์ชัน createRoom จาก firebase.js
+        const result = await createRoom(hostName, roomName, password);
+        currentRoomId = result.roomId;
+        currentPlayerId = result.playerId;
+
+        showToast(`สร้างห้อง "${roomName}" สำเร็จ!`);
+        showScreen('waiting'); // <-- ไปยังห้องรอเล่น
+        // listenToRoomUpdates(currentRoomId); // <-- จะเปิดใช้งานในขั้นตอนถัดไป
+    } catch (error) {
+        showToast('เกิดข้อผิดพลาดในการสร้างห้อง: ' + error.message);
+    }
 }
