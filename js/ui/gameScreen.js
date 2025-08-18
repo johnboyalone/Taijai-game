@@ -1,55 +1,24 @@
+// js/ui/gameScreen.js
 import { ui } from './elements.js';
 import { state, constants } from '../state.js';
+import { playSound, sounds } from '../audio.js';
+import { skipTurn } from '../firebase/gameActions.js';
+import { showToast } from './core.js';
 
-export function updateScoreboard(roomData) {
-    const players = Object.values(roomData.players);
-    const sortedPlayers = players.filter(p => p.connected).sort((a, b) => b.score - a.score);
-    let scoreboardHTML = '';
-    sortedPlayers.forEach(player => {
-        scoreboardHTML += `<div class="scoreboard-player"><span class="scoreboard-name">${player.name}</span><span class="scoreboard-score">${player.score} แต้ม</span></div>`;
-    });
-    ui.scoreboardContent.innerHTML = scoreboardHTML;
-}
-
-export function updateCardDisplay(roomData) {
-    const currentCard = roomData.currentCard;
-    const isMyTurnAsTarget = roomData.turn === state.currentPlayerId;
-    if (isMyTurnAsTarget && currentCard) {
-        ui.cardContent.innerHTML = `<div class="card-item"><h4 class="card-name">${currentCard.name}</h4><p class="card-description">${currentCard.description}</p></div>`;
+// --- Game Screen UI Updates ---
+export function updatePlayingUI(roomData) {
+    const myData = roomData.players[state.currentPlayerId];
+    if (myData.status === 'eliminated') {
+        ui.spectatorOverlay.classList.add('show');
+        ui.spectatorMessage.textContent = `คุณแพ้แล้ว! กำลังรับชม...`;
     } else {
-        ui.cardContent.innerHTML = `<p class="no-card-text">เฉพาะคนที่เป็นเป้าหมายเท่านั้นที่จะได้รับการ์ด</p>`;
+        ui.spectatorOverlay.classList.remove('show');
     }
-}
-
-export function updateHistoryLog(roomData) {
-    ui.historyLog.innerHTML = '';
-    if (!state.currentTargetId) {
-        ui.historyTargetName.textContent = 'ไม่มี';
-        return;
-    }
-    const targetData = roomData.players[state.currentTargetId];
-    ui.historyTargetName.textContent = targetData.name;
-    if (!targetData.guesses) return;
-
-    const sortedGuesses = Object.values(targetData.guesses).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-    sortedGuesses.forEach(item => {
-        const historyItem = document.createElement('div');
-        historyItem.className = 'history-item';
-        let cluesHTML = '';
-        if (item.strikes > 0) cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
-        if (item.balls > 0) cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
-        if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box clue-out">OUT</div>`;
-        const guesserName = item.byName || 'ผู้เล่น';
-        historyItem.innerHTML = `<div class="history-guess-info"><span class="history-guesser-name">${guesserName}:</span><span class="history-guess">${item.guess}</span></div><div class="history-clues">${cluesHTML}</div>`;
-        ui.historyLog.appendChild(historyItem);
-    });
-    ui.historyLog.scrollTop = ui.historyLog.scrollHeight;
-}
-
-export function updateChances(chances) {
-    for (let i = 0; i < 3; i++) {
-        ui.chanceDots[i].classList.toggle('used', i >= chances);
-    }
+    updateTurnIndicator(roomData);
+    updatePlayerSummaryGrid(roomData);
+    updateHistoryLog(roomData);
+    updateChances(myData.finalChances);
+    handleTurnTimer(roomData);
 }
 
 export function updateGuessDisplay() {
@@ -59,36 +28,97 @@ export function updateGuessDisplay() {
     }
 }
 
-export function updateTurnIndicator(roomData) {
-    const currentTurnId = roomData.turn;
-    const isMyTurnAsTarget = currentTurnId === state.currentPlayerId;
-    const myData = roomData.players[state.currentPlayerId];
-
-    ui.turnIndicator.classList.toggle('my-turn', isMyTurnAsTarget);
-    ui.turnIndicator.classList.toggle('their-turn', !isMyTurnAsTarget);
-
-    if (isMyTurnAsTarget) {
-        ui.turnText.textContent = "ตาของคุณ (กำลังถูกทาย)";
-    } else {
-        const turnPlayerName = roomData.players[currentTurnId]?.name || 'เพื่อน';
-        ui.turnText.textContent = `กำลังทาย: ${turnPlayerName}`;
-    }
-
-    if (myData.number) {
-        ui.ourNumberDisplay.innerHTML = '';
-        for (let i = 0; i < constants.GUESS_LENGTH; i++) {
-            ui.ourNumberDisplay.innerHTML += `<div class="number-input">${myData.number[i]}</div>`;
+function updatePlayerSummaryGrid(roomData) {
+    ui.playerSummaryGrid.innerHTML = '';
+    const opponents = roomData.turnOrder.filter(id => id !== state.currentPlayerId && roomData.players[id].connected);
+    opponents.forEach(opponentId => {
+        const opponentData = roomData.players[opponentId];
+        const card = document.createElement('div');
+        card.className = 'player-summary-card';
+        card.dataset.playerId = opponentId;
+        if (opponentData.status === 'eliminated') card.classList.add('is-eliminated');
+        if (opponentId === state.currentTargetId) card.classList.add('is-target');
+        card.innerHTML = `<div class="summary-card-name">${opponentData.name}</div><div class="summary-card-status">${opponentData.status === 'eliminated' ? 'แพ้แล้ว' : 'กำลังเล่น'}</div>`;
+        if (opponentData.status !== 'eliminated') {
+            card.addEventListener('click', () => {
+                playSound(sounds.click);
+                state.currentTargetId = opponentId;
+                updatePlayerSummaryGrid(roomData); // Re-render to show target change
+                updateHistoryLog(roomData);
+            });
         }
+        ui.playerSummaryGrid.appendChild(card);
+    });
+}
+
+function updateHistoryLog(roomData) {
+    ui.historyLog.innerHTML = '';
+    if (!state.currentTargetId) { ui.historyTargetName.textContent = 'ไม่มี'; return; }
+    const targetData = roomData.players[state.currentTargetId];
+    ui.historyTargetName.textContent = targetData.name;
+    if (!targetData.guesses) return;
+    Object.values(targetData.guesses).forEach(item => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        let cluesHTML = '';
+        if (item.strikes > 0) cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
+        if (item.balls > 0) cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
+        if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box clue-out">OUT</div>`;
+        historyItem.innerHTML = `<div class="history-guess">${item.guess}</div><div class="history-clues">${cluesHTML}</div>`;
+        ui.historyLog.appendChild(historyItem);
+    });
+    ui.historyLog.scrollTop = ui.historyLog.scrollHeight;
+}
+
+function updateChances(chances) {
+    for (let i = 0; i < 3; i++) {
+        ui.chanceDots[i].classList.toggle('used', i >= chances);
     }
 }
 
-export function updateGuessControls(roomData) {
-    const myData = roomData.players[state.currentPlayerId];
-    const isMyTurnAsTarget = roomData.turn === state.currentPlayerId;
-    const shouldBeDisabled = isMyTurnAsTarget || myData.status === 'eliminated';
+function updateTurnIndicator(roomData) {
+    const currentTurnId = roomData.turn;
+    const isMyTurn = currentTurnId === state.currentPlayerId;
+    if (isMyTurn && !ui.turnIndicator.classList.contains('my-turn')) {
+        playSound(sounds.turn);
+    }
+    ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
+    ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
+    if (isMyTurn) {
+        ui.turnText.textContent = "ตาของคุณ";
+    } else {
+        const turnPlayerName = roomData.players[currentTurnId]?.name || 'เพื่อน';
+        ui.turnText.textContent = `ตาของ ${turnPlayerName}`;
+    }
+}
 
-    ui.guessControls.style.opacity = shouldBeDisabled ? '0.5' : '1';
-    ui.guessControls.style.pointerEvents = shouldBeDisabled ? 'none' : 'auto';
-    ui.finalAnswerSection.style.opacity = shouldBeDisabled ? '0.5' : '1';
-    ui.finalAnswerSection.style.pointerEvents = shouldBeDisabled ? 'none' : 'auto';
+function handleTurnTimer(roomData) {
+    if (state.turnTimerInterval) clearInterval(state.turnTimerInterval);
+
+    const isMyTurn = roomData.turn === state.currentPlayerId;
+    ui.turnTimerDisplay.textContent = '';
+
+    if (!isMyTurn) return;
+
+    const turnStartTime = roomData.turnStartTime || Date.now();
+    const timePassed = (Date.now() - turnStartTime) / 1000;
+    let timeLeft = Math.round(constants.TURN_DURATION - timePassed);
+
+    state.turnTimerInterval = setInterval(() => {
+        if (timeLeft >= 0) {
+            ui.turnTimerDisplay.textContent = timeLeft;
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(state.turnTimerInterval);
+            const db = firebase.database();
+            db.ref(`rooms/${state.currentRoomId}/turn`).get().then(snapshot => {
+                if (snapshot.val() === state.currentPlayerId) {
+                    showToast("หมดเวลา! ข้ามตาอัตโนมัติ");
+                    skipTurn();
+                }
+            });
+        }
+        timeLeft--;
+    }, 1000);
 }
