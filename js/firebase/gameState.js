@@ -1,6 +1,6 @@
-// js/firebase/gameState.js (เวอร์ชันแก้ไข)
-// 🔥 1. Import db และ serverValue
-import { db, serverValue } from './config.js'; 
+// js/firebase/gameState.js (Final Confirmed Version)
+
+import { db, serverValue } from './config.js';
 import { state } from '../state.js';
 import { screens } from '../ui/elements.js';
 import { showScreen, showToast, showActionToast, updateWaitingRoomUI, displayGameOver, updateGameOverUI } from '../ui/core.js';
@@ -11,28 +11,26 @@ import { initializePlayerForGame } from './gameActions.js';
 function resetGameForRematch(roomData) {
     showToast("เริ่มเกมใหม่อีกครั้ง!");
     const updates = {};
-    const roomId = state.currentRoomId;
-    updates[`/rooms/${roomId}/gameState`] = 'setup';
-    updates[`/rooms/${roomId}/turn`] = roomData.turnOrder[0];
-    updates[`/rooms/${roomId}/winner`] = null;
-    updates[`/rooms/${roomId}/reason`] = null;
-    updates[`/rooms/${roomId}/rematch`] = {};
-    updates[`/rooms/${roomId}/lastAction`] = null;
-    updates[`/rooms/${roomId}/turnStartTime`] = serverValue.TIMESTAMP; // 🔥 2. แก้ไข
+    updates[`/rooms/${state.currentRoomId}/gameState`] = 'setup';
+    updates[`/rooms/${state.currentRoomId}/turn`] = roomData.turnOrder[0];
+    updates[`/rooms/${state.currentRoomId}/winner`] = null;
+    updates[`/rooms/${state.currentRoomId}/reason`] = null;
+    updates[`/rooms/${state.currentRoomId}/rematch`] = {};
+    updates[`/rooms/${state.currentRoomId}/lastAction`] = null;
+    updates[`/rooms/${state.currentRoomId}/turnStartTime`] = serverValue.TIMESTAMP;
 
     Object.keys(roomData.players).forEach(playerId => {
         if (roomData.players[playerId].connected) {
-            updates[`/rooms/${roomId}/players/${playerId}/numberSet`] = false;
-            updates[`/rooms/${roomId}/players/${playerId}/finalChances`] = 3;
-            updates[`/rooms/${roomId}/players/${playerId}/status`] = 'playing';
-            updates[`/rooms/${roomId}/players/${playerId}/guesses`] = null;
+            updates[`/rooms/${state.currentRoomId}/players/${playerId}/numberSet`] = false;
+            updates[`/rooms/${state.currentRoomId}/players/${playerId}/finalChances`] = 3;
+            updates[`/rooms/${state.currentRoomId}/players/${playerId}/status`] = 'playing';
+            updates[`/rooms/${state.currentRoomId}/players/${playerId}/guesses`] = null;
         }
     });
     db.ref().update(updates);
 }
 
 export function listenToRoomUpdates() {
-    // ... (ส่วนต้นของฟังก์ชันเหมือนเดิม) ...
     const roomRef = db.ref('rooms/' + state.currentRoomId);
     if (state.roomListener) roomRef.off('value', state.roomListener);
 
@@ -77,7 +75,7 @@ export function listenToRoomUpdates() {
                 if (allPlayersSetNumber && connectedPlayers.length > 1) {
                     db.ref(`rooms/${state.currentRoomId}`).update({
                         gameState: 'playing',
-                        turnStartTime: serverValue.TIMESTAMP // 🔥 3. แก้ไข
+                        turnStartTime: serverValue.TIMESTAMP
                     });
                 }
                 break;
