@@ -1,15 +1,34 @@
-// js/ui/eventListeners.js (เวอร์ชันแก้ไข)
+// js/ui/eventListeners.js (เวอร์ชันแก้ไขที่ถูกต้อง)
+
 import { ui, screens } from './elements.js';
 import { state, constants } from '../state.js';
 import { playSound, sounds, toggleMute } from '../audio.js';
-// 🔥 1. Import db และ serverValue
-import { db, serverValue } from '../firebase/config.js'; 
+import { db, serverValue } from '../firebase/config.js'; // <--- Import db และ serverValue
 import { createRoom, loadAndDisplayRooms, handlePasswordSubmit, joinRoom } from '../firebase/roomManager.js';
 import { submitGuess, submitFinalAnswer, requestRematch } from '../firebase/gameActions.js';
 import { showScreen, showToast } from './core.js';
 import { updateGuessDisplay } from './gameScreen.js';
 
-// ... (ฟังก์ชัน handleNumberPadClick และ createNumberPad เหมือนเดิม) ...
+// --- ย้ายฟังก์ชัน startGame มาไว้ที่นี่ ---
+function startGame() {
+    db.ref(`rooms/${state.currentRoomId}`).get().then(snapshot => {
+        if (snapshot.exists()) {
+            const roomData = snapshot.val();
+            if (roomData.gameState === 'waiting') {
+                const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
+                const updates = {
+                    gameState: 'setup',
+                    turnOrder: connectedPlayerIds,
+                    turn: connectedPlayerIds[0],
+                    turnStartTime: serverValue.TIMESTAMP,
+                    lastAction: null
+                };
+                db.ref(`rooms/${state.currentRoomId}`).update(updates);
+            }
+        }
+    });
+}
+
 function handleNumberPadClick(value) {
     playSound(sounds.click);
     if (ui.turnIndicator.classList.contains('their-turn')) {
@@ -35,6 +54,7 @@ function handleNumberPadClick(value) {
     }
     updateGuessDisplay();
 }
+
 export function createNumberPad() {
     ui.numberPadContainer.innerHTML = '';
     const buttons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ลบ', '0', 'ทาย'];
@@ -48,9 +68,7 @@ export function createNumberPad() {
     });
 }
 
-
 export function setupInitialListeners() {
-    // ... (Listeners อื่นๆ เหมือนเดิม) ...
     ui.soundControl.addEventListener('click', toggleMute);
     screens.splash.addEventListener('click', () => {
         playSound(sounds.click);
@@ -59,10 +77,12 @@ export function setupInitialListeners() {
             sounds.background.play().catch(e => console.log("Autoplay was prevented."));
         }
     });
+
     ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
     ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
     ui.confirmCreateBtn.addEventListener('click', () => { playSound(sounds.click); createRoom(); });
     ui.confirmJoinBtn.addEventListener('click', () => { playSound(sounds.click); joinRoom(); });
+
     ui.passwordModalSubmitBtn.addEventListener('click', () => { playSound(sounds.click); handlePasswordSubmit(); });
     ui.passwordModal.addEventListener('click', function(e) {
         if (e.target === this) {
@@ -70,28 +90,11 @@ export function setupInitialListeners() {
         }
     });
 
-    // 🔥 2. แก้ไขส่วน startGameBtn
+    // แก้ไขให้เรียกใช้ฟังก์ชัน startGame ที่เราย้ายมา
     ui.startGameBtn.addEventListener('click', () => {
         playSound(sounds.click);
         if (ui.startGameBtn.disabled) return;
-        
-        // ใช้ db ที่ import เข้ามาโดยตรง
-        db.ref(`rooms/${state.currentRoomId}`).get().then(snapshot => {
-            if (snapshot.exists()) {
-                const roomData = snapshot.val();
-                if (roomData.gameState === 'waiting') {
-                    const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
-                    const updates = {
-                        gameState: 'setup',
-                        turnOrder: connectedPlayerIds,
-                        turn: connectedPlayerIds[0],
-                        turnStartTime: serverValue.TIMESTAMP, // ใช้ serverValue ที่ import มา
-                        lastAction: null
-                    };
-                    db.ref(`rooms/${state.currentRoomId}`).update(updates);
-                }
-            }
-        });
+        startGame();
     });
 
     ui.submitFinalAnswerBtn.addEventListener('click', () => { playSound(sounds.click); submitFinalAnswer(); });
