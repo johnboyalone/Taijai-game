@@ -1,46 +1,152 @@
-/* css/components.css */
-/* Buttons, Inputs */
-.lobby-input {
-    width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 12px;
-    font-family: var(--font-family); font-size: 1.1rem; text-align: center;
-    box-sizing: border-box; margin-bottom: 15px;
-}
+/* ======== GLOBAL COMPONENTS ======== */
 .lobby-button {
-    width: 100%; padding: 14px; font-family: var(--font-family); font-size: 1.1rem;
-    font-weight: 500; color: white; background-color: var(--primary-color);
-    border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s ease;
+    width: 100%;
+    padding: 14px;
+    font-family: var(--font-family);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: white;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-.lobby-button.secondary { background-color: #a0aec0; }
-.lobby-button:disabled { background-color: #cbd5e0; cursor: not-allowed; }
-
-/* Player display */
-.player-slot { display: flex; align-items: center; background-color: #f7fafc; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); gap: 15px; }
-.player-avatar-initial {
-    width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8f0; color: white;
-    display: flex; justify-content: center; align-items: center; font-size: 1.5rem;
-    font-weight: 500; flex-shrink: 0;
+.lobby-button.secondary {
+    background-color: #a0aec0;
 }
-.player-name { flex-grow: 1; text-align: left; }
-.player-status { font-size: 0.9rem; padding: 4px 8px; border-radius: 8px; flex-shrink: 0; }
-.player-status.waiting { background-color: #fed7d7; color: #c53030; }
-.player-status.connected { background-color: #c6f6d5; color: #2f855a; }
+.lobby-button:disabled {
+    background-color: #cbd5e0;
+    cursor: not-allowed;
+}
 
-/* Clue boxes */
-.clue-box { padding: 5px 10px; border-radius: 8px; color: white; font-weight: 500; font-size: 0.9rem; display: inline-block; }
+.lobby-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-family: var(--font-family);
+    font-size: 1.1rem;
+    text-align: center;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+}
+
+.number-input {
+    width: clamp(40px, 15vw, 50px);
+    height: clamp(50px, 18vw, 60px);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    font-weight: 500;
+    box-sizing: border-box;
+}
+
+.clue-box {
+    padding: 5px 10px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: inline-block;
+}
 .clue-strike { background-color: var(--success-color); }
 .clue-ball { background-color: var(--accent-color); }
 .clue-out { background-color: #a0aec0; }
 
-/* Number inputs and pad */
-.number-input {
-    width: clamp(40px, 15vw, 50px); height: clamp(50px, 18vw, 60px); border: 2px solid var(--border-color);
-    border-radius: 16px; display: flex; justify-content: center; align-items: center;
-    font-size: clamp(1.5rem, 6vw, 2rem); font-weight: 500; box-sizing: border-box;
+/* ======== MODE SELECTION ======== */
+.mode-selection-container {
+    margin: 20px 0;
+    text-align: center;
 }
-.number-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(8px, 2vw, 12px); margin-top: 15px; }
-.number-cell {
-    aspect-ratio: 1.2 / 1; border-radius: 16px; background-color: #f8fafc;
-    border: 1px solid var(--border-color); font-size: clamp(1.2rem, 5vw, 1.5rem);
-    display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none;
+.mode-selection-title {
+    font-size: 1.1rem;
+    color: #718096;
+    margin-bottom: 15px;
 }
-.number-cell.special { background-color: #fee2e2; color: #ef4444; }
+.mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.mode-option-btn {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    background-color: #f7fafc;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+.mode-option-btn.selected {
+    border-color: var(--primary-color);
+    background-color: #e0f7ff;
+    box-shadow: 0 0 10px var(--shadow-color);
+}
+.mode-option-btn h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+.mode-option-btn p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+/* ======== Arcade Mode Components ======== */
+.scoreboard-player {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.scoreboard-player:last-child {
+    border-bottom: none;
+}
+.scoreboard-name {
+    font-weight: 500;
+}
+.scoreboard-score {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.no-card-text {
+    color: #a0aec0;
+    text-align: center;
+    padding: 20px 0;
+}
+.card-item {
+    background-color: #fffbeb;
+    border: 2px solid #fef3c7;
+    border-radius: 16px;
+    padding: 15px;
+    text-align: center;
+}
+.card-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #d97706; /* สีส้มเข้ม */
+    margin: 0 0 5px 0;
+}
+.card-description {
+    font-size: 0.95rem;
+    color: #b45309;
+    margin: 0;
+}
+
+.history-guess-info {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.history-guesser-name {
+    font-size: 0.9rem;
+    color: #718096;
+}
