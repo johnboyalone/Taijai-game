@@ -1,25 +1,29 @@
-import { playSound, sounds, toggleMute } from '../audio.js';
-import { showScreen, showToast } from './core.js';
+// js/ui/eventListeners.js
 import { ui, screens } from './elements.js';
+import { state, constants } from '../state.js';
+import { playSound, sounds, toggleMute } from '../audio.js';
 import { createRoom, loadAndDisplayRooms, handlePasswordSubmit, joinRoom } from '../firebase/roomManager.js';
 import { submitGuess, submitFinalAnswer, requestRematch, startGame } from '../firebase/gameActions.js';
-import { state, constants } from '../state.js';
+import { showScreen, showToast } from './core.js';
 import { updateGuessDisplay } from './gameScreen.js';
-import { debugLog } from '../main.js';
 
+/**
+ * จัดการการคลิกบน Number Pad ในหน้าเล่นเกม
+ * @param {string} value - ค่าของปุ่มที่ถูกกด ('1', '2', ..., 'ลบ', 'ทาย')
+ */
 function handleNumberPadClick(value) {
     playSound(sounds.click);
-    const myData = state.roomData?.players[state.currentPlayerId];
-    const isMyTurnAsTarget = state.roomData?.turn === state.currentPlayerId;
-
-    if (isMyTurnAsTarget || myData?.status === 'eliminated') {
-        showToast("ตอนนี้คุณทายไม่ได้ครับ");
+    if (ui.turnIndicator.classList.contains('their-turn')) {
+        showToast("ยังไม่ถึงตาของคุณ!");
         return;
     }
-
     if (value === 'ลบ') {
         if (state.currentGuess.length > 0) state.currentGuess.pop();
     } else if (value === 'ทาย') {
+        if (!state.currentTargetId) {
+            showToast("กรุณาเลือกเป้าหมายที่จะทายก่อน");
+            return;
+        }
         if (state.currentGuess.length === constants.GUESS_LENGTH) {
             submitGuess();
         } else {
@@ -33,6 +37,9 @@ function handleNumberPadClick(value) {
     updateGuessDisplay();
 }
 
+/**
+ * สร้างปุ่ม Number Pad ขึ้นมาใน DOM และผูก Event Listener
+ */
 export function createNumberPad() {
     ui.numberPadContainer.innerHTML = '';
     const buttons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ลบ', '0', 'ทาย'];
@@ -46,44 +53,49 @@ export function createNumberPad() {
     });
 }
 
+/**
+ * ตั้งค่า Event Listeners ทั้งหมดของแอปพลิเคชัน
+ * ควรเรียกใช้ฟังก์ชันนี้เพียงครั้งเดียวเมื่อเริ่มต้นแอป
+ */
 export function setupInitialListeners() {
-    debugLog("7. setupInitialListeners() is called.");
+    // --- Sound Control ---
+    ui.soundControl.addEventListener('click', toggleMute);
 
-    if (!screens.splash) {
-        debugLog("CRITICAL ERROR: Splash screen element not found!");
-        return;
-    }
-
+    // --- Splash Screen ---
     screens.splash.addEventListener('click', () => {
-        debugLog("8. Splash screen CLICKED! Changing to lobby...");
         playSound(sounds.click);
         showScreen('lobby');
+        if (sounds.background.paused && !state.isMuted) {
+            sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+        }
     });
 
-    debugLog("INFO: Splash screen event listener attached.");
-
-    ui.soundControl.addEventListener('click', toggleMute);
+    // --- Lobby & Room Management ---
     ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
     ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
     ui.confirmCreateBtn.addEventListener('click', () => { playSound(sounds.click); createRoom(); });
-    ui.modeOptionBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            playSound(sounds.click);
-            ui.modeOptionBtns.forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            state.selectedGameMode = btn.dataset.mode;
-            ui.confirmCreateBtn.disabled = false;
-        });
-    });
-    ui.passwordModalSubmitBtn.addEventListener('click', () => { playSound(sounds.click); handlePasswordSubmit(); });
-    ui.passwordModal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
     ui.confirmJoinBtn.addEventListener('click', () => { playSound(sounds.click); joinRoom(); });
+
+    // --- Password Modal ---
+    ui.passwordModalSubmitBtn.addEventListener('click', () => { playSound(sounds.click); handlePasswordSubmit(); });
+    ui.passwordModal.addEventListener('click', function(e) {
+        // ปิด Modal เมื่อคลิกที่พื้นหลังสีเทา
+        if (e.target === this) {
+            this.classList.remove('show');
+        }
+    });
+
+    // --- Waiting Room ---
     ui.startGameBtn.addEventListener('click', () => {
         playSound(sounds.click);
         if (ui.startGameBtn.disabled) return;
         startGame();
     });
+
+    // --- Game Actions ---
     ui.submitFinalAnswerBtn.addEventListener('click', () => { playSound(sounds.click); submitFinalAnswer(); });
+
+    // --- Game Over ---
     ui.rematchBtn.addEventListener('click', () => { playSound(sounds.click); requestRematch(); });
     ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
 }
