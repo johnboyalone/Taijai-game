@@ -1,3 +1,4 @@
+// js/audio.js
 import { state } from './state.js';
 import { ui } from './ui/elements.js';
 
@@ -9,13 +10,22 @@ export const sounds = {
     turn: new Audio('sounds/your-turn.mp3')
 };
 
-sounds.background.loop = true;
-sounds.background.volume = 0.3;
-sounds.turn.volume = 0.7;
-sounds.click.volume = 0.5;
+export function initializeAudio() {
+    sounds.background.loop = true;
+    sounds.background.volume = 0.3;
+    sounds.turn.volume = 0.7;
+    sounds.click.volume = 0.5;
+
+    // เพิ่มการจัดการ Error หากโหลดไฟล์เสียงไม่สำเร็จ
+    Object.values(sounds).forEach(sound => {
+        sound.onerror = () => {
+            console.warn(`Could not load sound: ${sound.src}`);
+        };
+    });
+}
 
 export function playSound(sound) {
-    if (state.isMuted) return;
+    if (state.isMuted || !sound || !sound.src) return;
     sound.currentTime = 0;
     sound.play().catch(error => console.log(`Error playing sound: ${error.message}`));
 }
@@ -29,5 +39,5 @@ export function toggleMute() {
         sounds.background.play().catch(e => console.log("Autoplay was prevented."));
         ui.soundIcon.textContent = '🔊';
     }
-    sounds.click.play();
+    playSound(sounds.click);
 }
