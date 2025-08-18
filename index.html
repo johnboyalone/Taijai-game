@@ -7,11 +7,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-    <!-- สไตล์ชีตยังคงเหมือนเดิม -->
     <link rel="stylesheet" href="style.css?v1.4">
 </head>
 <body>
+
+    <!-- เนื้อหา HTML ทั้งหมดยังคงเหมือนเดิมทุกส่วน -->
 
     <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
@@ -160,16 +160,17 @@
 
     <!-- 
       ==================================================
-      SCRIPT LOADING SECTION (REVISED)
+      SCRIPT LOADING SECTION (DEBUGGING MODULES)
       ==================================================
     -->
 
-    <!-- 1. Load Firebase SDKs first. By placing them here, they are guaranteed to be loaded and ready before our main script runs. -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <!-- ขั้นตอนการดีบัก: เราจะคอมเมนต์สคริปต์ Firebase ออกไปก่อน -->
+    <!-- เพื่อทดสอบว่าการโหลดสคริปต์แบบโมดูล (main.js -> ui.js) ทำงานได้ถูกต้องหรือไม่ -->
+    <!-- <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script> -->
+    <!-- <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script> -->
 
-    <!-- 2. Load our main script as a module at the very end. This ensures the DOM is ready and Firebase is available. -->
-    <script type="module" src="js/main.js?v1.7"></script>
+    <!-- เรียกใช้แค่ main.js ซึ่งเป็น module ของเราเท่านั้น -->
+    <script type="module" src="js/main.js?v1.8"></script>
 
 </body>
 </html>
