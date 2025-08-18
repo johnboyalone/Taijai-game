@@ -1,23 +1,37 @@
-// js/firebase.js (เวอร์ชันเริ่มต้นใหม่)
+// js/firebase.js
 
-// 1. ใส่ Firebase Config ของคุณ
-const firebaseConfig = {
-    apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
-    authDomain: "taijai.firebaseapp.com",
-    databaseURL: "https://taijai-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "taijai",
-    storageBucket: "taijai.appspot.com",
-    messagingSenderId: "262573756581",
-    appId: "1:262573756581:web:c17bfc795b5cf139693d4c"
-};
-
-// 2. Initialize Firebase (พร้อมตัวป้องกันการรันซ้ำ)
+// ... (ส่วน config และ initialize เดิม) ...
 if (!firebase.apps.length) {
-    console.log("firebase.js: Initializing Firebase...");
-    firebase.initializeApp(firebaseConfig);
+    // ...
 }
-
-// 3. Export ตัวแปร database เพื่อให้ไฟล์อื่นนำไปใช้ได้
 export const db = firebase.database();
+// ... (console.log เดิม) ...
 
-console.log("firebase.js: Firebase initialized and db exported.");
+
+// --- ฟังก์ชันสำหรับสร้างห้อง (นำกลับมา) ---
+export function createRoom(hostName, roomName, password) {
+    return new Promise((resolve, reject) => {
+        const newRoomId = db.ref('rooms').push().key;
+        const playerId = 'player1';
+
+        const roomData = {
+            roomName, hostName, password,
+            players: {
+                'player1': { id: 'player1', name: hostName, connected: true, isHost: true, numberSet: false, finalChances: 3, status: 'playing' },
+                'player2': { id: 'player2', name: 'ผู้เล่น 2', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
+                'player3': { id: 'player3', name: 'ผู้เล่น 3', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
+                'player4': { id: 'player4', name: 'ผู้เล่น 4', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' }
+            },
+            playerCount: 1,
+            gameState: 'waiting',
+        };
+
+        db.ref('rooms/' + newRoomId).set(roomData)
+            .then(() => {
+                resolve({ roomId: newRoomId, playerId: playerId });
+            })
+            .catch(error => {
+                reject(error);
+            });
+    });
+}
