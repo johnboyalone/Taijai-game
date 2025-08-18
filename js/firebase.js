@@ -1,70 +1,31 @@
 // js/firebase.js
 
 // --- Firebase Initialization ---
+// ตรวจสอบให้แน่ใจว่าคุณใส่ Firebase Config ของคุณที่นี่
 const firebaseConfig = {
-  // (ใส่ config ของคุณที่นี่)
+    apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
+    authDomain: "taijai.firebaseapp.com",
+    databaseURL: "https://taijai-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "taijai",
+    storageBucket: "taijai.appspot.com",
+    messagingSenderId: "262573756581",
+    appId: "1:262573756581:web:c17bfc795b5cf139693d4c"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+export const db = firebase.database(); // Export database instance
 
 // --- Room Management Functions ---
-function createRoom(hostName, roomName, password) {
-    // (โค้ดส่วน createRoom ทั้งหมด แต่ return Promise ที่มี roomId และ playerId)
+// เราจะสร้างฟังก์ชันเหล่านี้ในขั้นตอนถัดไป แต่ export ชื่อไว้ก่อน
+export function createRoom(hostName, roomName, password) {
+    console.log(`(Firebase) Creating room: ${roomName} by ${hostName}`);
+    // โค้ดจริงจะมาทีหลัง
+    // ตอนนี้แค่จำลองว่าสร้างสำเร็จและแสดง Toast
+    return Promise.resolve({ roomId: 'DUMMY_ROOM_ID', playerId: 'player1' });
 }
 
-function loadAndDisplayRooms(onRoomClick) {
-    // (โค้ดส่วน loadAndDisplayRooms ทั้งหมด)
+export function loadAndDisplayRooms(onRoomClick) {
+    console.log("(Firebase) Loading rooms...");
+    // โค้ดจริงจะมาทีหลัง
 }
 
-function verifyRoomPassword(roomId, enteredPassword) {
-    // (โค้ดส่วน handlePasswordSubmit ที่ตรวจสอบรหัสผ่าน)
-}
-
-function joinRoom(roomId, joinerName) {
-    // (โค้ดส่วน joinRoom ทั้งหมด)
-}
-
-function listenToRoomUpdates(roomId, callback) {
-    // (โค้ดส่วน listenToRoomUpdates ที่รับ callback function มาทำงาน)
-}
-
-function stopListeningToRoom(roomId) {
-    // (ฟังก์ชันสำหรับหยุด listener)
-}
-
-// --- Game Action Functions ---
-function startGame(roomId) {
-    // (โค้ดส่วน startGameBtn.addEventListener)
-}
-
-function setPlayerNumber(roomId, playerId, number) {
-    // (โค้ดส่วน setPlayerNumber)
-}
-
-function submitGuess(roomId, playerId, targetId, guess) {
-    // (โค้ดส่วน submitGuess)
-}
-
-function submitFinalAnswer(roomId, playerId, targetId, guess) {
-    // (โค้ดส่วน submitFinalAnswer)
-}
-
-function requestRematch(roomId, playerId) {
-    // (โค้ดส่วน requestRematch)
-}
-
-// Export ฟังก์ชันเพื่อให้ main.js เรียกใช้ได้
-export {
-    db,
-    createRoom,
-    loadAndDisplayRooms,
-    verifyRoomPassword,
-    joinRoom,
-    listenToRoomUpdates,
-    stopListeningToRoom,
-    startGame,
-    setPlayerNumber,
-    submitGuess,
-    submitFinalAnswer,
-    requestRematch
-};
+// (ฟังก์ชันอื่นๆ ที่จะใช้ในอนาคต)
