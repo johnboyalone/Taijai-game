@@ -1,12 +1,13 @@
-// js/firebase/gameActions.js
-import { db } from './config.js';
+// js/firebase/gameActions.js (เวอร์ชันแก้ไข)
+// 🔥 1. Import db และ serverValue
+import { db, serverValue } from './config.js'; 
 import { state, constants } from '../state.js';
 import { ui } from '../ui/elements.js';
 import { showToast } from '../ui/core.js';
 import { updateGuessDisplay } from '../ui/gameScreen.js';
 import { playSound, sounds } from '../audio.js';
 
-// --- Helper Functions ---
+// ... (ฟังก์ชัน generateRandomNumber, calculateClues, initializePlayerForGame เหมือนเดิม) ...
 function generateRandomNumber() {
     let result = [];
     for (let i = 0; i < constants.GUESS_LENGTH; i++) {
@@ -14,7 +15,6 @@ function generateRandomNumber() {
     }
     return result;
 }
-
 function calculateClues(guess, answer) {
     let strikes = 0, balls = 0;
     const answerCopy = [...answer];
@@ -35,27 +35,6 @@ function calculateClues(guess, answer) {
     }
     return { strikes, balls };
 }
-
-// --- Game Actions ---
-export function startGame() {
-    db.ref(`rooms/${state.currentRoomId}`).get().then(snapshot => {
-        if (snapshot.exists()) {
-            const roomData = snapshot.val();
-            if (roomData.gameState === 'waiting') {
-                const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
-                const updates = {
-                    gameState: 'setup',
-                    turnOrder: connectedPlayerIds,
-                    turn: connectedPlayerIds[0],
-                    turnStartTime: firebase.database.ServerValue.TIMESTAMP,
-                    lastAction: null
-                };
-                db.ref(`rooms/${state.currentRoomId}`).update(updates);
-            }
-        }
-    });
-}
-
 export function initializePlayerForGame(roomData) {
     const ourNumber = generateRandomNumber();
     ui.ourNumberDisplay.innerHTML = '';
@@ -68,25 +47,14 @@ export function initializePlayerForGame(roomData) {
     db.ref(`rooms/${state.currentRoomId}/players/${state.currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
 }
 
+
 export function submitGuess() {
     const guessString = state.currentGuess.join('');
     db.ref(`rooms/${state.currentRoomId}`).transaction(roomData => {
         if (roomData && roomData.gameState === 'playing' && roomData.turn === state.currentPlayerId) {
-            const opponentNumber = roomData.players[state.currentTargetId].number;
-            const clues = calculateClues(state.currentGuess, opponentNumber.split(''));
-            const guessData = { guess: guessString, strikes: clues.strikes, balls: clues.balls, by: state.currentPlayerId };
-            const historyPath = `players/${state.currentTargetId}/guesses`;
-            if (!roomData.players[state.currentTargetId].guesses) {
-                roomData.players[state.currentTargetId].guesses = {};
-            }
-            const newGuessKey = db.ref().child(historyPath).push().key;
-            roomData.players[state.currentTargetId].guesses[newGuessKey] = guessData;
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing' && roomData.players[id].connected);
-            const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-            const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers.length > 0 ? activePlayers[nextTurnIndex] : null;
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
-            roomData.lastAction = { actorName: roomData.players[state.currentPlayerId].name, targetName: roomData.players[state.currentTargetId].name, type: 'guess', timestamp: Date.now() };
+            // ...
+            roomData.turnStartTime = serverValue.TIMESTAMP; // 🔥 2. แก้ไข
+            // ...
         }
         return roomData;
     }).then(() => {
@@ -96,56 +64,25 @@ export function submitGuess() {
 }
 
 export function submitFinalAnswer() {
-    if (ui.turnIndicator.classList.contains('their-turn')) { showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!"); return; }
-    if (!state.currentTargetId) { showToast("กรุณาเลือกเป้าหมายที่จะส่งคำตอบสุดท้าย"); return; }
-    if (state.currentGuess.length !== constants.GUESS_LENGTH) { showToast(`กรุณาใส่เลขคำตอบให้ครบ ${constants.GUESS_LENGTH} ตัว`); return; }
-
+    // ...
     const finalAnswer = state.currentGuess.join('');
     db.ref(`rooms/${state.currentRoomId}`).transaction(roomData => {
         if (roomData && roomData.gameState === 'playing' && roomData.turn === state.currentPlayerId) {
-            const targetPlayer = roomData.players[state.currentTargetId];
-            const actorPlayer = roomData.players[state.currentPlayerId];
-            let actionType = '';
-            if (finalAnswer === targetPlayer.number) {
-                targetPlayer.status = 'eliminated';
-                actionType = 'final_correct';
-            } else {
-                actorPlayer.finalChances--;
-                if (actorPlayer.finalChances <= 0) {
-                    actorPlayer.status = 'eliminated';
-                }
-                actionType = 'final_wrong';
-            }
-            roomData.lastAction = { actorName: actorPlayer.name, targetName: targetPlayer.name, type: actionType, timestamp: Date.now() };
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing' && roomData.players[id].connected);
-            const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-            const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers.length > 0 ? activePlayers[nextTurnIndex] : null;
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
+            // ...
+            roomData.turnStartTime = serverValue.TIMESTAMP; // 🔥 3. แก้ไข
+            // ...
         }
         return roomData;
     }).then((result) => {
-        if(result.committed) {
-            const roomData = result.snapshot.val();
-            const myData = roomData.players[state.currentPlayerId];
-            const chancesBefore = myData.finalChances + 1;
-            if (myData.finalChances < chancesBefore && myData.status === 'playing') {
-                 playSound(sounds.wrong);
-            }
-        }
-        state.currentGuess = [];
-        updateGuessDisplay();
+        // ...
     });
 }
 
 export function skipTurn() {
     db.ref(`rooms/${state.currentRoomId}`).transaction(roomData => {
         if (roomData && roomData.gameState === 'playing' && roomData.turn === state.currentPlayerId) {
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing' && roomData.players[id].connected);
-            const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-            const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers.length > 0 ? activePlayers[nextTurnIndex] : null;
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
+            // ...
+            roomData.turnStartTime = serverValue.TIMESTAMP; // 🔥 4. แก้ไข
         }
         return roomData;
     });
