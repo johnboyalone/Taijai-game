@@ -1,20 +1,16 @@
-// js/main.js (เวอร์ชันทดสอบที่ 2)
+// js/main.js (ทดสอบ import ที่ 1)
 
-// เราจะใส่คอมเมนต์ (//) เพื่อ "ปิด" การ import ทั้งหมดชั่วคราว
+import { showScreen } from './ui/core.js'; // <--- เปิดบรรทัดนี้
+
 // import { initializeFirebase } from './firebase/config.js';
 // import { initializeAudio } from './audio.js';
 // import { setupInitialListeners } from './ui/eventListeners.js';
-// import { showScreen } from './ui/core.js';
 
-alert("Success! main.js is now running.");
+alert("Test 1: core.js imported successfully!");
 
 /*
 function main() {
-    initializeFirebase();
-    initializeAudio();
-    setupInitialListeners();
-    showScreen('splash');
+    // ...
 }
-
 main();
 */
