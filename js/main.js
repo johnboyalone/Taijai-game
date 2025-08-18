@@ -1,15 +1,14 @@
-// js/main.js (ทดสอบ import ที่ 4)
+// js/main.js (เวอร์ชันสมบูรณ์)
 
-import { showScreen } from './ui/core.js';
-import { initializeFirebase } from './firebase/config.js';
 import { initializeAudio } from './audio.js';
-import { setupInitialListeners } from './ui/eventListeners.js'; // <--- เปิดบรรทัดนี้
+import { setupInitialListeners } from './ui/eventListeners.js';
+import { showScreen } from './ui/core.js';
+// ไม่ต้อง import อะไรจาก firebase/config.js ที่นี่โดยตรง
 
-alert("Test 4: eventListeners.js imported successfully!");
-
-/*
 function main() {
-    // ...
+    initializeAudio();
+    setupInitialListeners();
+    showScreen('splash');
 }
+
 main();
-*/
