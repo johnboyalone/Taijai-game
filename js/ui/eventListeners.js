@@ -5,6 +5,7 @@ import { createRoom, loadAndDisplayRooms, handlePasswordSubmit, joinRoom } from 
 import { submitGuess, submitFinalAnswer, requestRematch, startGame } from '../firebase/gameActions.js';
 import { state, constants } from '../state.js';
 import { updateGuessDisplay } from './gameScreen.js';
+import { debugLog } from '../main.js';
 
 function handleNumberPadClick(value) {
     playSound(sounds.click);
@@ -46,16 +47,24 @@ export function createNumberPad() {
 }
 
 export function setupInitialListeners() {
+    debugLog("7. setupInitialListeners() is called.");
+
+    if (!screens.splash) {
+        debugLog("CRITICAL ERROR: Splash screen element not found!");
+        return;
+    }
+
     screens.splash.addEventListener('click', () => {
+        debugLog("8. Splash screen CLICKED! Changing to lobby...");
         playSound(sounds.click);
         showScreen('lobby');
     });
 
-    ui.soundControl.addEventListener('click', toggleMute);
+    debugLog("INFO: Splash screen event listener attached.");
 
+    ui.soundControl.addEventListener('click', toggleMute);
     ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
     ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
-
     ui.confirmCreateBtn.addEventListener('click', () => { playSound(sounds.click); createRoom(); });
     ui.modeOptionBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -66,20 +75,15 @@ export function setupInitialListeners() {
             ui.confirmCreateBtn.disabled = false;
         });
     });
-
     ui.passwordModalSubmitBtn.addEventListener('click', () => { playSound(sounds.click); handlePasswordSubmit(); });
     ui.passwordModal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
-
     ui.confirmJoinBtn.addEventListener('click', () => { playSound(sounds.click); joinRoom(); });
-
     ui.startGameBtn.addEventListener('click', () => {
         playSound(sounds.click);
         if (ui.startGameBtn.disabled) return;
         startGame();
     });
-
     ui.submitFinalAnswerBtn.addEventListener('click', () => { playSound(sounds.click); submitFinalAnswer(); });
-
     ui.rematchBtn.addEventListener('click', () => { playSound(sounds.click); requestRematch(); });
     ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
 }
