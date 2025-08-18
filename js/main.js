@@ -1,26 +1,27 @@
-// js/main.js (เวอร์ชันแก้ไข)
+// js/main.js (เวอร์ชันสำหรับดีบัก)
 import { initializeFirebase } from './firebase/config.js';
 import { initializeAudio } from './audio.js';
 import { setupInitialListeners } from './ui/eventListeners.js';
 import { showScreen } from './ui/core.js';
 
-/**
- * ฟังก์ชันหลักของแอปพลิเคชัน
- * ทำหน้าที่เริ่มต้นระบบต่างๆ ตามลำดับ
- */
+// ป้ายบอกทางที่ 1
+alert("1. main.js is running!");
+
 function main() {
-    // 1. เริ่มการเชื่อมต่อกับ Firebase
+    // ป้ายบอกทางที่ 2
+    alert("2. main() function started!");
+
     initializeFirebase();
+    alert("3. Firebase Initialized!");
 
-    // 2. ตั้งค่าระบบเสียง
     initializeAudio();
+    alert("4. Audio Initialized!");
 
-    // 3. ผูก Event Listeners ทั้งหมดเข้ากับปุ่มและ element ต่างๆ
     setupInitialListeners();
+    alert("5. Event Listeners Setup!");
 
-    // 4. แสดงหน้าจอแรก (Splash Screen)
     showScreen('splash');
+    alert("6. Splash Screen Shown!");
 }
 
-// เรียกใช้งานฟังก์ชันหลักโดยตรง เนื่องจาก type="module" จะรอให้ DOM พร้อมใช้งานโดยอัตโนมัติ
 main();
