@@ -1,14 +1,9 @@
-// js/main.js (เวอร์ชันสมบูรณ์)
+// js/main.js (Final Stand - Step 1)
 
-import { initializeAudio } from './audio.js';
-import { setupInitialListeners } from './ui/eventListeners.js';
+// เราจะ import แค่ 2 อย่างที่เรารู้ว่าปลอดภัย
 import { showScreen } from './ui/core.js';
-// ไม่ต้อง import อะไรจาก firebase/config.js ที่นี่โดยตรง
+import { setupInitialListeners } from './ui/eventListeners.js';
 
-function main() {
-    initializeAudio();
-    setupInitialListeners();
-    showScreen('splash');
-}
-
-main();
+// เรียกใช้ฟังก์ชันหลัก
+setupInitialListeners();
+showScreen('splash');
