@@ -1,12 +1,51 @@
-// js/ui/eventListeners.js (Rebuilding - Step 3: Firebase Write)
+// js/ui/eventListeners.js (Final Confirmed Version)
 
-// Import สิ่งที่จำเป็น
-import { screens, ui } from './elements.js';
-import { showScreen, showToast } from './core.js'; // <--- เพิ่ม showToast
-import { playSound, sounds, toggleMute } from '../audio.js';
+import { ui, screens } from './elements.js';
 import { state } from '../state.js';
-// --- เพิ่มการ import จาก Firebase ---
-import { loadAndDisplayRooms, createRoom } from '../firebase/roomManager.js'; // <--- เพิ่ม createRoom
+import { playSound, sounds, toggleMute } from '../audio.js';
+import { createRoom, loadAndDisplayRooms, handlePasswordSubmit, joinRoom } from '../firebase/roomManager.js';
+import { submitGuess, submitFinalAnswer, requestRematch } from '../firebase/gameActions.js';
+import { showScreen } from './core.js';
+import { updateGuessDisplay } from './gameScreen.js';
+
+function handleNumberPadClick(value) { /* ... โค้ดเหมือนเดิม ... */ 
+    playSound(sounds.click);
+    if (ui.turnIndicator.classList.contains('their-turn')) {
+        showToast("ยังไม่ถึงตาของคุณ!");
+        return;
+    }
+    if (value === 'ลบ') {
+        if (state.currentGuess.length > 0) state.currentGuess.pop();
+    } else if (value === 'ทาย') {
+        if (!state.currentTargetId) {
+            showToast("กรุณาเลือกเป้าหมายที่จะทายก่อน");
+            return;
+        }
+        if (state.currentGuess.length === constants.GUESS_LENGTH) {
+            submitGuess();
+        } else {
+            showToast(`กรุณาใส่เลขให้ครบ ${constants.GUESS_LENGTH} ตัว`);
+        }
+    } else {
+        if (state.currentGuess.length < constants.GUESS_LENGTH) {
+            state.currentGuess.push(value);
+        }
+    }
+    updateGuessDisplay();
+}
+
+export function createNumberPad() { /* ... โค้ดเหมือนเดิม ... */ 
+    ui.numberPadContainer.innerHTML = '';
+    const buttons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ลบ', '0', 'ทาย'];
+    buttons.forEach(val => {
+        const cell = document.createElement('div');
+        cell.className = 'number-cell';
+        cell.textContent = val;
+        if (val === 'ลบ' || val === 'ทาย') cell.classList.add('special');
+        cell.addEventListener('click', () => handleNumberPadClick(val));
+        ui.numberPadContainer.appendChild(cell);
+    });
+}
 
 export function setupInitialListeners() {
     ui.soundControl.addEventListener('click', toggleMute);
@@ -18,23 +57,19 @@ export function setupInitialListeners() {
         }
     });
 
-    // --- แก้ไขปุ่มสร้างห้อง ---
-    ui.goToCreateBtn.addEventListener('click', () => {
-        playSound(sounds.click);
-        showScreen('createRoom');
-        // ไม่มี alert แล้ว เพราะเราจะให้ปุ่ม "ยืนยัน" ทำงานจริง
+    ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
+    ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
+    ui.confirmCreateBtn.addEventListener('click', () => { playSound(sounds.click); createRoom(); });
+    ui.confirmJoinBtn.addEventListener('click', () => { playSound(sounds.click); joinRoom(); });
+
+    ui.passwordModalSubmitBtn.addEventListener('click', () => { playSound(sounds.click); handlePasswordSubmit(); });
+    ui.passwordModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('show');
+        }
     });
 
-    ui.goToJoinBtn.addEventListener('click', () => {
-        playSound(sounds.click);
-        showScreen('roomList');
-        loadAndDisplayRooms();
-    });
-
-    // --- เพิ่ม Event Listener ให้กับปุ่ม "ยืนยันและสร้างห้อง" ---
-    ui.confirmCreateBtn.addEventListener('click', () => {
-        playSound(sounds.click);
-        // เรียกใช้ฟังก์ชัน createRoom ของจริง
-        createRoom();
-    });
+    ui.submitFinalAnswerBtn.addEventListener('click', () => { playSound(sounds.click); submitFinalAnswer(); });
+    ui.rematchBtn.addEventListener('click', () => { playSound(sounds.click); requestRematch(); });
+    ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
 }
