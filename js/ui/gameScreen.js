@@ -1,11 +1,60 @@
-// js/ui/gameScreen.js
+// js/ui/gameScreen.js (เวอร์ชันแก้ไข)
 import { ui } from './elements.js';
 import { state, constants } from '../state.js';
 import { playSound, sounds } from '../audio.js';
 import { skipTurn } from '../firebase/gameActions.js';
 import { showToast } from './core.js';
+// 🔥 1. Import db
+import { db } from '../firebase/config.js';
 
-// --- Game Screen UI Updates ---
+// ... (ฟังก์ชันอื่นๆ เหมือนเดิม) ...
+function updateTurnIndicator(roomData) {
+    const currentTurnId = roomData.turn;
+    const isMyTurn = currentTurnId === state.currentPlayerId;
+    if (isMyTurn && !ui.turnIndicator.classList.contains('my-turn')) {
+        playSound(sounds.turn);
+    }
+    ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
+    ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
+    if (isMyTurn) {
+        ui.turnText.textContent = "ตาของคุณ";
+    } else {
+        const turnPlayerName = roomData.players[currentTurnId]?.name || 'เพื่อน';
+        ui.turnText.textContent = `ตาของ ${turnPlayerName}`;
+    }
+}
+
+function handleTurnTimer(roomData) {
+    if (state.turnTimerInterval) clearInterval(state.turnTimerInterval);
+
+    const isMyTurn = roomData.turn === state.currentPlayerId;
+    ui.turnTimerDisplay.textContent = '';
+
+    if (!isMyTurn) return;
+
+    const turnStartTime = roomData.turnStartTime || Date.now();
+    const timePassed = (Date.now() - turnStartTime) / 1000;
+    let timeLeft = Math.round(constants.TURN_DURATION - timePassed);
+
+    state.turnTimerInterval = setInterval(() => {
+        if (timeLeft >= 0) {
+            ui.turnTimerDisplay.textContent = timeLeft;
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(state.turnTimerInterval);
+            // 🔥 2. ใช้ db ที่ import มา
+            db.ref(`rooms/${state.currentRoomId}/turn`).get().then(snapshot => {
+                if (snapshot.val() === state.currentPlayerId) {
+                    showToast("หมดเวลา! ข้ามตาอัตโนมัติ");
+                    skipTurn();
+                }
+            });
+        }
+        timeLeft--;
+    }, 1000);
+}
+// ... (ฟังก์ชันอื่นๆ ที่เหลือเหมือนเดิม) ...
 export function updatePlayingUI(roomData) {
     const myData = roomData.players[state.currentPlayerId];
     if (myData.status === 'eliminated') {
@@ -74,51 +123,4 @@ function updateChances(chances) {
     for (let i = 0; i < 3; i++) {
         ui.chanceDots[i].classList.toggle('used', i >= chances);
     }
-}
-
-function updateTurnIndicator(roomData) {
-    const currentTurnId = roomData.turn;
-    const isMyTurn = currentTurnId === state.currentPlayerId;
-    if (isMyTurn && !ui.turnIndicator.classList.contains('my-turn')) {
-        playSound(sounds.turn);
-    }
-    ui.turnIndicator.classList.toggle('my-turn', isMyTurn);
-    ui.turnIndicator.classList.toggle('their-turn', !isMyTurn);
-    if (isMyTurn) {
-        ui.turnText.textContent = "ตาของคุณ";
-    } else {
-        const turnPlayerName = roomData.players[currentTurnId]?.name || 'เพื่อน';
-        ui.turnText.textContent = `ตาของ ${turnPlayerName}`;
-    }
-}
-
-function handleTurnTimer(roomData) {
-    if (state.turnTimerInterval) clearInterval(state.turnTimerInterval);
-
-    const isMyTurn = roomData.turn === state.currentPlayerId;
-    ui.turnTimerDisplay.textContent = '';
-
-    if (!isMyTurn) return;
-
-    const turnStartTime = roomData.turnStartTime || Date.now();
-    const timePassed = (Date.now() - turnStartTime) / 1000;
-    let timeLeft = Math.round(constants.TURN_DURATION - timePassed);
-
-    state.turnTimerInterval = setInterval(() => {
-        if (timeLeft >= 0) {
-            ui.turnTimerDisplay.textContent = timeLeft;
-        }
-
-        if (timeLeft <= 0) {
-            clearInterval(state.turnTimerInterval);
-            const db = firebase.database();
-            db.ref(`rooms/${state.currentRoomId}/turn`).get().then(snapshot => {
-                if (snapshot.val() === state.currentPlayerId) {
-                    showToast("หมดเวลา! ข้ามตาอัตโนมัติ");
-                    skipTurn();
-                }
-            });
-        }
-        timeLeft--;
-    }, 1000);
 }
