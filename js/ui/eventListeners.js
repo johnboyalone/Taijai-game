@@ -1,15 +1,36 @@
-// js/ui/eventListeners.js (Final Stand - Step 2)
+// js/ui/eventListeners.js (Rebuilding - Step 1: Audio)
 
-// Import เฉพาะสิ่งที่จำเป็นสำหรับหน้า Splash
-import { screens } from './elements.js';
+// Import สิ่งที่จำเป็น
+import { screens, ui } from './elements.js'; // <--- เพิ่ม ui เข้ามา
 import { showScreen } from './core.js';
-// เรายังไม่ import เสียง หรือ Firebase หรืออะไรทั้งสิ้น
+import { playSound, sounds, toggleMute } from '../audio.js'; // <--- เพิ่มการ import เสียง
+import { state } from '../state.js'; // <--- เพิ่มการ import state
 
 export function setupInitialListeners() {
-    // เราจะผูก Event แค่อันเดียว คือการคลิกที่หน้า Splash
+    // --- เพิ่มปุ่มควบคุมเสียงกลับเข้ามา ---
+    ui.soundControl.addEventListener('click', toggleMute);
+
+    // --- อัปเกรด Event ของ Splash Screen ให้มีเสียง ---
     screens.splash.addEventListener('click', () => {
-        // เมื่อคลิก ให้ไปที่หน้า lobby
+        playSound(sounds.click); // <--- เพิ่มเสียงคลิก
         showScreen('lobby');
-        alert("It works! You clicked the splash screen and moved to the lobby screen.");
+
+        // เล่นเพลงพื้นหลังถ้ายังไม่ได้เล่น
+        if (sounds.background.paused && !state.isMuted) {
+            sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+        }
+    });
+
+    // --- เพิ่ม Event ให้กับปุ่มในหน้า Lobby ---
+    ui.goToCreateBtn.addEventListener('click', () => {
+        playSound(sounds.click);
+        showScreen('createRoom');
+    });
+
+    ui.goToJoinBtn.addEventListener('click', () => {
+        playSound(sounds.click);
+        showScreen('roomList');
+        // เรายังไม่ใส่ฟังก์ชัน loadAndDisplayRooms() ที่เชื่อมกับ Firebase
+        alert("Clicked 'Join Room'. Firebase function is not connected yet.");
     });
 }
