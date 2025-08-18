@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEBUG - เกมทายเลข</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- เราจะเอามาแค่ 2 หน้าจอที่จำเป็นสำหรับการทดสอบนี้ -->
+
+    <!-- Screen 1: Splash Screen -->
+    <div id="splash-screen" class="game-screen show">
+        <div class="splash-content" style="background: white; padding: 20px; border-radius: 15px; text-align: center;">
+            <h1>หน้าทดสอบ</h1>
+            <p>ถ้าคลิกที่นี่แล้วหน้าจอเปลี่ยนเป็นสีแดง แสดงว่า JavaScript ทำงานถูกต้อง</p>
+            <p style="font-size: 2rem; margin-top: 20px;">(แตะที่นี่)</p>
+        </div>
+    </div>
+
+    <!-- Screen 2: Lobby Screen (แค่พื้นหลังสีแดงเพื่อดูว่าเปลี่ยนหน้าได้) -->
+    <div id="lobby-screen" class="game-screen" style="background-color: #ff6b6b;">
+        <h1 style="color: white; font-size: 2rem;">สำเร็จ! JavaScript ทำงานแล้ว</h1>
+    </div>
+
+    <!-- 
+      ==================================================
+      SCRIPT LOADING SECTION (DEBUG MODE)
+      ==================================================
+      เราจะเขียน JavaScript ที่จำเป็นทั้งหมดไว้ในไฟล์ HTML นี้โดยตรง
+      เพื่อตัดปัญหาเรื่องการโหลดไฟล์, type="module", import/export ทั้งหมดออกไป
+    -->
+    <script>
+        // รอให้หน้าเว็บโหลดเสร็จ
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // แสดง Log ใน Console เพื่อให้แน่ใจว่าสคริปต์เริ่มทำงาน
+            console.log("DEBUG SCRIPT: DOM Content Loaded. Script is running.");
+
+            // ดึง Element ที่จำเป็น
+            const splashScreen = document.getElementById('splash-screen');
+            const lobbyScreen = document.getElementById('lobby-screen');
+
+            // ตรวจสอบว่าหา Element เจอหรือไม่
+            if (splashScreen && lobbyScreen) {
+                console.log("DEBUG SCRIPT: Found splash and lobby screens.");
+
+                // เพิ่ม Event Listener ให้กับ Splash Screen
+                splashScreen.addEventListener('click', () => {
+                    console.log("DEBUG SCRIPT: Splash screen clicked!");
+                    
+                    // ซ่อน Splash Screen
+                    splashScreen.classList.remove('show');
+                    
+                    // แสดง Lobby Screen
+                    lobbyScreen.classList.add('show');
+                });
+
+            } else {
+                console.error("DEBUG SCRIPT: Could not find splash or lobby screen elements!");
+            }
+        });
+    </script>
+
+</body>
+</html>
