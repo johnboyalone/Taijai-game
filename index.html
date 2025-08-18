@@ -8,10 +8,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/screens.css">
-    <link rel="stylesheet" href="css/utilities.css">
+    <!-- 
+      แก้ไขจุดที่ผิดพลาด: 
+      เราจะเรียกใช้แค่ main.css ไฟล์เดียว ซึ่งภายในไฟล์นั้น
+      มีคำสั่ง @import ไฟล์อื่นๆ ตามลำดับอยู่แล้ว
+    -->
+    <link rel="stylesheet" href="css/main.css">
+
 </head>
 <body>
 
@@ -73,17 +76,14 @@
         </div>
     </div>
 
-    <!-- Screen 4: Room List Screen -->
+    <!-- ... เนื้อหา HTML ส่วนที่เหลือทั้งหมดเหมือนเดิม ... -->
+    <!-- Screen 4, 4.5, 5, 6, 7, Modals, Toasts, Sound Control -->
     <div id="room-list-screen" class="game-screen">
         <div class="room-list-container">
             <h2 class="room-list-title">รายการห้องที่ว่างอยู่</h2>
-            <div id="room-list-content">
-                <p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p>
-            </div>
+            <div id="room-list-content"><p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p></div>
         </div>
     </div>
-
-    <!-- Screen 4.5: Joiner Setup Screen -->
     <div id="joiner-setup-screen" class="game-screen">
         <div class="lobby-container">
             <div class="lobby-box">
@@ -94,8 +94,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Screen 5: Waiting Room Screen -->
     <div id="waiting-room-screen" class="game-screen">
         <div class="waiting-room-container">
             <h2 class="waiting-room-title">ห้องรอเล่น</h2>
@@ -110,66 +108,33 @@
             <button id="start-game-btn" class="lobby-button" disabled>เริ่มเกม</button>
         </div>
     </div>
-
-    <!-- Screen 6: Main Game Screen -->
     <div id="main-game-screen" class="game-screen">
-        <div id="turn-indicator" class="turn-indicator">
-            <span id="turn-text">กำลังรอ...</span>
-            <span id="turn-timer-display"></span>
-        </div>
+        <div id="turn-indicator" class="turn-indicator"><span id="turn-text">กำลังรอ...</span><span id="turn-timer-display"></span></div>
         <div class="main-container">
-            <div id="scoreboard-section" class="section arcade-only">
-                <h2 class="section-title">📊 ตารางคะแนน</h2>
-                <div id="scoreboard-content"></div>
-            </div>
-            <div id="card-display-section" class="section arcade-only">
-                <h2 class="section-title">🃏 การ์ดช่วยเหลือ</h2>
-                <div id="card-content"></div>
-            </div>
+            <div id="scoreboard-section" class="section arcade-only"><h2 class="section-title">📊 ตารางคะแนน</h2><div id="scoreboard-content"></div></div>
+            <div id="card-display-section" class="section arcade-only"><h2 class="section-title">🃏 การ์ดช่วยเหลือ</h2><div id="card-content"></div></div>
             <div class="section"><h2 class="section-title">⭐ เลขของเรา</h2><div id="our-number-display" class="input-container"></div></div>
             <div class="section"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
-            <div class="section guess-controls">
-                <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
-                <div id="guess-number-container" class="input-container"><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div></div>
-                <div id="number-pad-container" class="number-grid"></div>
-            </div>
-            <div class="final-answer-section">
-                <div class="final-answer-chances">โอกาสตอบ: <span id="chance-1" class="chance-dot"></span><span id="chance-2" class="chance-dot"></span><span id="chance-3" class="chance-dot"></span></div>
-                <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
-            </div>
+            <div class="section guess-controls"><h2 class="section-title">ทายเลข / ส่งคำตอบ</h2><div id="guess-number-container" class="input-container"><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div></div><div id="number-pad-container" class="number-grid"></div></div>
+            <div class="final-answer-section"><div class="final-answer-chances">โอกาสตอบ: <span id="chance-1" class="chance-dot"></span><span id="chance-2" class="chance-dot"></span><span id="chance-3" class="chance-dot"></span></div><button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button></div>
         </div>
         <div id="spectator-overlay" class="spectator-overlay"><div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div></div>
     </div>
-
-    <!-- Screen 7: Game Over Screen -->
     <div id="game-over-screen" class="game-screen">
         <div class="game-over-container">
-            <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
-            <h2 id="winner-name" class="winner-name"></h2>
-            <p id="game-over-message" class="game-over-message"></p>
+            <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1><h2 id="winner-name" class="winner-name"></h2><p id="game-over-message" class="game-over-message"></p>
             <div id="final-scores-container" class="arcade-only"></div>
             <div class="game-over-numbers" id="game-over-numbers-container"></div>
-            <div class="game-over-buttons">
-                <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
-                <button id="back-to-lobby-btn" class="lobby-button secondary">กลับหน้าหลัก</button>
-            </div>
+            <div class="game-over-buttons"><button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button><button id="back-to-lobby-btn" class="lobby-button secondary">กลับหน้าหลัก</button></div>
         </div>
     </div>
-
-    <!-- Modals and Toasts -->
     <div id="password-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 class="modal-title">กรอกรหัสผ่านสำหรับห้อง</h3>
-            <p id="password-modal-room-name"></p>
-            <input type="password" id="password-modal-input" class="lobby-input" placeholder="รหัสผ่าน 4 ตัวเลข" maxlength="4" inputmode="numeric">
-            <button id="password-modal-submit-btn" class="lobby-button">ยืนยัน</button>
-        </div>
+        <div class="modal-content"><h3 class="modal-title">กรอกรหัสผ่านสำหรับห้อง</h3><p id="password-modal-room-name"></p><input type="password" id="password-modal-input" class="lobby-input" placeholder="รหัสผ่าน 4 ตัวเลข" maxlength="4" inputmode="numeric"><button id="password-modal-submit-btn" class="lobby-button">ยืนยัน</button></div>
     </div>
     <div id="toast" class="toast-notification"></div>
     <div id="action-toast" class="action-toast"><p id="action-toast-text"></p></div>
-
-    <!-- Sound Control Button -->
     <div id="sound-control" class="sound-control"><span id="sound-icon">🔊</span></div>
+
 
     <!-- Mobile Debug Console (เวอร์ชันย่อ-ขยายได้) -->
     <div id="mobile-debug-container" class="expanded">
