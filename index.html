@@ -13,10 +13,6 @@
 </head>
 <body>
 
-    <!-- ================================================== -->
-    <!--           เนื้อหา HTML ทั้งหมดยังคงเหมือนเดิมทุกส่วน           -->
-    <!-- ================================================== -->
-
     <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
         <div class="splash-content">
@@ -162,20 +158,18 @@
     <!-- Sound Control Button -->
     <div id="sound-control" class="sound-control"><span id="sound-icon">🔊</span></div>
 
-    <!-- Firebase SDK -->
+    <!-- 
+      ==================================================
+      SCRIPT LOADING SECTION (REVISED)
+      ==================================================
+    -->
+
+    <!-- 1. Load Firebase SDKs first. By placing them here, they are guaranteed to be loaded and ready before our main script runs. -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <!-- ================================================== -->
-    <!--           >>>>> การเปลี่ยนแปลงที่สำคัญ <<<<<           -->
-    <!-- ================================================== -->
-    <!-- 
-        เปลี่ยนจากการเรียก script.js ไฟล์เดียว
-        มาเป็นการเรียก js/main.js ซึ่งเป็นไฟล์หลัก
-        และต้องเพิ่ม type="module" เพื่อให้รองรับการ import/export
-        จากไฟล์อื่นๆ (ui.js, firebase.js, game.js)
-    -->
-    <script type="module" src="js/main.js?v1.5"></script>
+    <!-- 2. Load our main script as a module at the very end. This ensures the DOM is ready and Firebase is available. -->
+    <script type="module" src="js/main.js?v1.7"></script>
 
 </body>
 </html>
