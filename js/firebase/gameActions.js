@@ -1,4 +1,4 @@
-// js/firebase/gameActions.js (เวอร์ชันแก้ไขที่ถูกต้อง)
+// js/firebase/gameActions.js
 import { db, serverValue } from './config.js';
 import { state, constants } from '../state.js';
 import { ui } from '../ui/elements.js';
@@ -46,7 +46,6 @@ export function initializePlayerForGame(roomData) {
         ui.ourNumberDisplay.innerHTML += `<div class="number-input">${ourNumber[i]}</div>`;
     }
     state.currentGuess = [];
-    // Set the first opponent as the initial target
     const firstTarget = roomData.turnOrder.find(id => id !== state.currentPlayerId);
     state.currentTargetId = firstTarget;
     db.ref(`rooms/${state.currentRoomId}/players/${state.currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
@@ -119,7 +118,6 @@ export function submitFinalAnswer() {
             const myData = roomData.players[state.currentPlayerId];
             const targetData = roomData.players[state.currentTargetId];
 
-            // ตรวจสอบว่าทายผิดหรือไม่ เพื่อเล่นเสียง
             if (targetData.status === 'playing' && myData.status === 'playing') {
                  playSound(sounds.wrong);
             }
