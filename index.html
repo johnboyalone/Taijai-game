@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เกม ทายเลขทายใจ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css?v1.4">
+</head>
+<body>
+
+    <div id="splash-screen" class="game-screen show">
+        <div class="splash-content">
+            <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v1.3</span></h1>
+            <div class="instructions">
+                <h2>วิธีการเล่น (2-4 คน)</h2>
+                <ol>
+                    <li>ผู้เล่นจะได้รับเลขลับ 4 หลักของตัวเอง</li>
+                    <li>ในแต่ละตา คุณมีเวลา 20 วินาทีในการทายเลขของเป้าหมาย</li>
+                    <li>
+                        ผลการทาย:
+                        <ul>
+                            <li>**S (Strikes)**: เลขถูกและตำแหน่งถูก</li>
+                            <li>**B (Balls)**: เลขถูกแต่ตำแหน่งไม่ถูก</li>
+                        </ul>
+                    </li>
+                    <li>หากมีผู้เล่นคนใดทายเลขลับของคุณได้ถูกต้อง คุณจะตกรอบ</li>
+                    <li>ผู้เล่นคนสุดท้ายที่เหลืออยู่จะเป็นผู้ชนะ</li>
+                </ol>
+            </div>
+            <div class="input-group">
+                <input type="text" id="username-input" class="lobby-input" placeholder="กรอกชื่อผู้เล่น" maxlength="15">
+                <div class="button-group">
+                    <button id="create-room-btn" class="lobby-button create">สร้างห้อง</button>
+                    <button id="join-room-btn" class="lobby-button join">เข้าร่วม</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="lobby-screen" class="game-screen">
+        <div class="game-container">
+            <div class="section">
+                <h2 class="section-title" id="room-code">รหัสห้อง: ABCD</h2>
+                <div class="room-players">
+                    <ul id="player-list"></ul>
+                </div>
+                <button id="ready-btn" class="lobby-button ready">พร้อม</button>
+            </div>
+            <div id="room-list"></div>
+            <p id="lobby-status"></p>
+        </div>
+    </div>
+
+    <div id="game-screen" class="game-screen">
+        <div class="game-container">
+            
+            <div class="section turn-indicator-section">
+                <div class="turn-indicator-box">
+                    <span id="turn-indicator">ถึงตา...</span>
+                </div>
+                <div class="timer-box">
+                    <span id="turn-timer">20</span>
+                </div>
+            </div>
+
+            <div id="game-controls">
+                
+                <div id="number-setup" class="section">
+                    <h2 class="section-title">ตั้งเลขลับของคุณ 🎲</h2>
+                    <p>กรุณาตั้งเลข 4 หลักที่ไม่ซ้ำกัน</p>
+                    <div class="input-container">
+                        <input type="text" id="number-setup-input" class="number-setup-input" maxlength="4" inputmode="numeric">
+                        <button id="confirm-number-btn" class="submit-btn">ยืนยัน</button>
+                    </div>
+                </div>
+
+                <div class="section guess-controls">
+                    <h2 class="section-title">ทายเลข</h2>
+                    <div id="guess-number-container" class="input-container">
+                        <div class="number-input"></div>
+                        <div class="number-input"></div>
+                        <div class="number-input"></div>
+                        <div class="number-input"></div>
+                    </div>
+                    <div id="number-pad-container" class="number-grid"></div>
+                    <div class="button-group">
+                        <button id="submit-guess-btn" class="submit-btn">ส่งคำทาย</button>
+                        <button id="delete-guess-btn" class="delete-btn">ลบ</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section player-info">
+                <div class="player-info-card my-card">
+                    <h3 id="my-number-display">เลขลับของคุณ: XXXX</h3>
+                    <div class="guesses-container">
+                        <h4 class="guess-title">ประวัติคำทายที่คุณโดนทาย</h4>
+                        <ul id="my-guesses-history" class="guess-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="game-screen">
+        <div class="game-over-content">
+            <h1 id="winner-display" class="winner-text"></h1>
+            <div class="button-group">
+                <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
+                <button id="end-game-btn" class="lobby-button">จบเกม</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">กรอกรหัสผ่านสำหรับห้อง</h3>
+            <p id="password-modal-room-name"></p>
+            <input type="password" id="password-modal-input" class="lobby-input" placeholder="รหัสผ่าน 4 ตัวเลข" maxlength="4" inputmode="numeric">
+            <button id="password-modal-submit-btn" class="lobby-button">ยืนยัน</button>
+        </div>
+    </div>
+    <div id="toast" class="toast-notification"></div>
+    <div id="action-toast" class="action-toast"><p id="action-toast-text"></p></div>
+
+    <div id="sound-control" class="sound-control"><span id="sound-icon">🔊</span></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script src="script.js?v1.4"></script>
+
+</body>
+</html>
