@@ -1,9 +1,7 @@
-// js/main.js
-import { db, createRoom, joinRoom, listenToRoomList, detachRoomListListener, verifyPassword, listenToRoomUpdates, detachRoomListener } from './firebase.js';
+import { db, auth, signInAnonymously, onAuthStateChanged, getCurrentUserId, createRoom, joinRoom, listenToRoomList, detachRoomListListener, verifyPassword, listenToRoomUpdates, detachRoomListener, setupDisconnectHandler, cancelDisconnectHandler } from './firebase.js';
 import { screens, ui, showScreen, showToast, showActionToast, updateWaitingRoomUI, updateGuessDisplay, updateChances, updateTurnIndicator, updateHistoryLog, updatePlayerSummaryGrid, displayGameOver, updateGameOverUI } from './ui.js';
 import { GUESS_LENGTH, TURN_DURATION, createNumberPad, generateRandomNumber, submitGuess, submitFinalAnswer, skipTurn, requestRematch, resetGameForRematch } from './game.js';
 
-// ======== GAME STATE VARIABLES ========
 let currentRoomId = null;
 let joiningRoomData = null;
 let currentPlayerId = null;
@@ -13,8 +11,8 @@ let roomListListenerData = null;
 let currentGuess = [];
 let isMuted = false;
 let turnTimerInterval = null;
+let lastGameState = null;
 
-// ======== AUDIO REFERENCES & FUNCTIONS ========
 const sounds = {
     background: new Audio('../sounds/background-music.mp3'),
     click: new Audio('../sounds/click.mp3'),
@@ -37,14 +35,18 @@ function playSound(sound) {
     }
 }
 
-// ======== INITIALIZATION ========
 document.addEventListener('DOMContentLoaded', () => {
     setupAudio();
     setupInitialListeners();
-    showScreen('splash');
+    onAuthStateChanged(user => {
+        if (user) {
+            showScreen('splash');
+        } else {
+            signInAnonymously();
+        }
+    });
 });
 
-// ======== EVENT LISTENERS SETUP ========
 function setupInitialListeners() {
     screens.splash.addEventListener('click', handleSplashClick);
     ui.soundControl.addEventListener('click', toggleMute);
@@ -61,7 +63,6 @@ function setupInitialListeners() {
     createNumberPad(handleNumberPadClick);
 }
 
-// ======== EVENT HANDLERS ========
 function handleSplashClick() {
     playSound(sounds.click);
     showScreen('lobby');
@@ -182,21 +183,16 @@ function handleStartGame() {
     playSound(sounds.click);
     if (ui.startGameBtn.disabled) return;
 
-    db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
-        if (snapshot.exists()) {
-            const roomData = snapshot.val();
-            if (roomData.gameState === 'waiting') {
-                const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.id);
-                const updates = {
-                    gameState: 'setup',
-                    turnOrder: connectedPlayerIds,
-                    turn: connectedPlayerIds[0],
-                    turnStartTime: firebase.database.ServerValue.TIMESTAMP,
-                    lastAction: null
-                };
-                db.ref(`rooms/${currentRoomId}`).update(updates);
-            }
+    db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
+        if (roomData && roomData.gameState === 'waiting') {
+            const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.uid);
+            roomData.gameState = 'setup';
+            roomData.turnOrder = connectedPlayerIds;
+            roomData.turn = connectedPlayerIds[0];
+            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
+            roomData.lastAction = null;
         }
+        return roomData;
     });
 }
 
@@ -243,7 +239,6 @@ function handleRematch() {
 function handleTargetSelection(selectedTargetId) {
     playSound(sounds.click);
     currentTargetId = selectedTargetId;
-    // The UI will be updated by the listener, but we can force an update for responsiveness if needed
     db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
         if(snapshot.exists()) {
             const roomData = snapshot.val();
@@ -253,27 +248,31 @@ function handleTargetSelection(selectedTargetId) {
     });
 }
 
-// ======== CORE GAME STATE MACHINE ========
 function startListeningToRoomUpdates() {
     if (roomListenerData) detachRoomListener(roomListenerData);
+    setupDisconnectHandler(currentRoomId, currentPlayerId);
     roomListenerData = listenToRoomUpdates(currentRoomId, (roomData) => {
         if (!roomData) {
             if (turnTimerInterval) clearInterval(turnTimerInterval);
+            cancelDisconnectHandler(currentRoomId, currentPlayerId);
             showToast("ห้องถูกปิดแล้ว กลับสู่หน้าหลัก");
             setTimeout(() => window.location.reload(), 3000);
             return;
         }
 
-        // --- Rematch Logic ---
+        if (lastGameState !== roomData.gameState) {
+            if (turnTimerInterval) clearInterval(turnTimerInterval);
+            lastGameState = roomData.gameState;
+        }
+
         const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
         if (roomData.rematch && Object.values(roomData.rematch).filter(v => v === true).length === connectedPlayers.length && connectedPlayers.length > 1) {
-            if (currentPlayerId === 'player1') { // Only host resets the game
+            if (currentPlayerId === 'player1') {
                 resetGameForRematch(currentRoomId, roomData);
             }
             return;
         }
 
-        // --- Action Toast Logic ---
         if (roomData.lastAction && roomData.lastAction.timestamp > (Date.now() - 4000)) {
             const { actorName, targetName, type } = roomData.lastAction;
             let message = '';
@@ -283,7 +282,6 @@ function startListeningToRoomUpdates() {
             if(message) showActionToast(message);
         }
 
-        // --- Game State Switch ---
         switch (roomData.gameState) {
             case 'waiting':
                 showScreen('waiting');
@@ -304,7 +302,6 @@ function startListeningToRoomUpdates() {
                 updatePlayingUI(roomData);
                 break;
             case 'finished':
-                if (turnTimerInterval) clearInterval(turnTimerInterval);
                 if (!screens.gameOver.classList.contains('show')) {
                     displayGameOver(roomData, currentPlayerId, playSound, sounds.win);
                 }
@@ -316,8 +313,6 @@ function startListeningToRoomUpdates() {
 
 function initializeGameUI(roomData) {
     showScreen('game');
-    if (turnTimerInterval) clearInterval(turnTimerInterval);
-    turnTimerInterval = null;
     currentGuess = [];
     updateGuessDisplay(currentGuess, GUESS_LENGTH);
     ui.historyLog.innerHTML = '';
@@ -346,7 +341,7 @@ function updatePlayingUI(roomData) {
 
     const activePlayers = Object.values(roomData.players).filter(p => p.status === 'playing' && p.connected);
     if (activePlayers.length <= 1 && roomData.playerCount > 1 && roomData.gameState === 'playing') {
-        if (currentPlayerId === 'player1') { // Only host declares winner
+        if (currentPlayerId === 'player1') {
             db.ref(`rooms/${currentRoomId}`).update({
                 gameState: 'finished',
                 winner: activePlayers[0]?.id || null,
@@ -379,7 +374,6 @@ function handleTurnTimer(roomData) {
             ui.turnTimerDisplay.textContent = timeLeft;
         } else {
             clearInterval(turnTimerInterval);
-            // Check again if it's still my turn before skipping
             db.ref(`rooms/${currentRoomId}/turn`).get().then(snapshot => {
                 if (snapshot.val() === currentPlayerId) {
                     showToast("หมดเวลา! ข้ามตาอัตโนมัติ");
@@ -389,6 +383,6 @@ function handleTurnTimer(roomData) {
         }
     };
 
-    updateTimer(); // Run once immediately
+    updateTimer();
     turnTimerInterval = setInterval(updateTimer, 1000);
 }
