@@ -12,7 +12,7 @@ let currentGuess = [];
 let isMuted = false;
 let turnTimerInterval = null;
 let lastGameState = null;
-let hasSignedIn = false; // เพิ่มตัวแปรนี้เพื่อตรวจสอบว่าเคยล็อกอินแล้วหรือยัง
+let hasSignedIn = false;
 
 const sounds = {
     background: new Audio('../sounds/background-music.mp3'),
@@ -232,7 +232,6 @@ function startListeningToRoomUpdates() {
         const myData = roomData.players[currentPlayerId];
         
         if (roomData.gameState !== lastGameState) {
-            // โค้ดที่เล่นเสียงหรือเปลี่ยนหน้าจอเมื่อ gameState เปลี่ยน
             stopSound(sounds.background);
             if (roomData.gameState === 'playing') {
                 showScreen('game');
@@ -342,10 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // เริ่มกระบวนการล็อกอินแบบไม่ระบุตัวตน
     signInAnonymously().then(() => {
         // เมื่อล็อกอินสำเร็จ ค่อยกำหนด Event Listeners และเปลี่ยนหน้าจอ
-        console.log("Anonymous sign-in complete. Setting up event listeners.");
         onAuthStateChanged(user => {
             if (user && !hasSignedIn) {
-                hasSignedIn = true; // ป้องกันการเรียกซ้ำ
+                hasSignedIn = true;
                 setupAudio();
                 ui.goToCreateBtn.addEventListener('click', handleGoToCreate);
                 ui.goToJoinBtn.addEventListener('click', handleGoToJoin);
