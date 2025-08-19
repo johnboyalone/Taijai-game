@@ -23,6 +23,7 @@ const sounds = {
 };
 
 function setupAudio() {
+    // ปรับปรุงโค้ดส่วนนี้เพื่อป้องกันการเกิด error
     sounds.background.loop = true;
     sounds.background.volume = 0.3;
     sounds.turn.volume = 0.7;
@@ -31,7 +32,10 @@ function setupAudio() {
 function playSound(sound) {
     if (isMuted) return;
     sound.currentTime = 0;
-    sound.play().catch(e => console.error("Error playing sound:", e));
+    sound.play().catch(e => {
+        // เพิ่ม catch เพื่อจัดการกับ Error ที่เกิดจากการเล่นไฟล์เสียง
+        console.error("Error playing sound:", e);
+    });
 }
 
 function stopSound(sound) {
