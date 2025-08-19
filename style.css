@@ -407,3 +407,84 @@ body {
 #sound-icon {
     font-size: 24px;
 }
+
+/* ======== DEBUG CONSOLE STYLES (เพิ่มเข้ามาใหม่) ======== */
+#debug-console {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: 500px;
+    height: 200px;
+    background-color: rgba(30, 30, 30, 0.9);
+    color: #f0f0f0;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: height 0.3s ease, bottom 0.3s ease;
+}
+
+#debug-console.collapsed {
+    height: 40px; /* ความสูงตอนยุบ */
+}
+
+#console-header {
+    background-color: rgba(50, 50, 50, 0.8);
+    padding: 0 15px;
+    height: 40px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+#console-header span {
+    font-weight: bold;
+}
+
+.console-buttons button {
+    background: #555;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 4px 8px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+.console-buttons button:hover {
+    background: #777;
+}
+
+#console-content {
+    padding: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+    word-wrap: break-word;
+}
+
+#console-content div {
+    padding: 2px 0;
+    border-bottom: 1px solid #444;
+}
+
+#console-content .log-error {
+    color: #ff8a8a;
+    font-weight: bold;
+}
+
+#console-content .log-info {
+    color: #a6e22e;
+}
+
+#console-content .log-warn {
+    color: #f9d770;
+}
