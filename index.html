@@ -8,10 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
 
+    <!-- สไตล์ชีตยังคงเหมือนเดิม -->
     <link rel="stylesheet" href="style.css?v1.4">
 </head>
 <body>
 
+    <!-- ================================================== -->
+    <!--           เนื้อหา HTML ทั้งหมดยังคงเหมือนเดิมทุกส่วน           -->
+    <!-- ================================================== -->
+
+    <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
         <div class="splash-content">
             <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v1.3</span></h1>
@@ -23,100 +29,125 @@
                     <li>
                         ผลการทาย:
                         <ul>
-                            <li>**S (Strikes)**: เลขถูกและตำแหน่งถูก</li>
-                            <li>**B (Balls)**: เลขถูกแต่ตำแหน่งไม่ถูก</li>
+                            <li><span class="clue-box clue-strike">S (Strike)</span>: ตัวเลขและตำแหน่งถูกต้อง</li>
+                            <li><span class="clue-box clue-ball">B (Ball)</span>: ตัวเลขถูกต้องแต่ตำแหน่งผิด</li>
+                            <li><span class="clue-box clue-out">OUT</span>: ไม่มีตัวเลขนั้นในคำตอบ</li>
                         </ul>
                     </li>
-                    <li>หากมีผู้เล่นคนใดทายเลขลับของคุณได้ถูกต้อง คุณจะตกรอบ</li>
-                    <li>ผู้เล่นคนสุดท้ายที่เหลืออยู่จะเป็นผู้ชนะ</li>
+                    <li>เมื่อมั่นใจ ให้ "ส่งคำตอบสุดท้าย" เพื่อกำจัดเป้าหมาย</li>
+                    <li>ถ้าตอบผิด จะเสียโอกาส (มี 3 ครั้ง) ถ้าโอกาสหมดจะแพ้</li>
+                    <li>คนที่อยู่รอดเป็นคนสุดท้ายคือผู้ชนะ!</li>
                 </ol>
-            </div>
-            <div class="input-group">
-                <input type="text" id="username-input" class="lobby-input" placeholder="กรอกชื่อผู้เล่น" maxlength="15">
-                <div class="button-group">
-                    <button id="create-room-btn" class="lobby-button create">สร้างห้อง</button>
-                    <button id="join-room-btn" class="lobby-button join">เข้าร่วม</button>
-                </div>
+                <p class="start-prompt">(แตะที่หน้าจอเพื่อไปต่อ)</p>
             </div>
         </div>
     </div>
 
+    <!-- Screen 2: Lobby Screen -->
     <div id="lobby-screen" class="game-screen">
-        <div class="game-container">
-            <div class="section">
-                <h2 class="section-title" id="room-code">รหัสห้อง: ABCD</h2>
-                <div class="room-players">
-                    <ul id="player-list"></ul>
-                </div>
-                <button id="ready-btn" class="lobby-button ready">พร้อม</button>
+        <div class="lobby-container">
+            <div class="lobby-box">
+                <h2 class="lobby-title">สร้างห้องใหม่</h2>
+                <p class="lobby-description">สร้างห้องและชวนเพื่อนของคุณมาเล่น</p>
+                <button id="go-to-create-btn" class="lobby-button">สร้างห้อง</button>
             </div>
-            <div id="room-list"></div>
-            <p id="lobby-status"></p>
+            <div class="lobby-box">
+                <h2 class="lobby-title">เข้าร่วมห้อง</h2>
+                <p class="lobby-description">ดูรายการห้องทั้งหมดและเข้าร่วม</p>
+                <button id="go-to-join-btn" class="lobby-button">เข้าร่วมห้อง</button>
+            </div>
         </div>
     </div>
 
-    <div id="game-screen" class="game-screen">
-        <div class="game-container">
-            
-            <div class="section turn-indicator-section">
-                <div class="turn-indicator-box">
-                    <span id="turn-indicator">ถึงตา...</span>
-                </div>
-                <div class="timer-box">
-                    <span id="turn-timer">20</span>
-                </div>
+    <!-- Screen 3: Create Room Setup Screen -->
+    <div id="create-room-screen" class="game-screen">
+        <div class="lobby-container">
+            <div class="lobby-box">
+                <h2 class="lobby-title">ตั้งค่าห้องของคุณ</h2>
+                <input type="text" id="host-name-input" class="lobby-input" placeholder="ชื่อของคุณ" maxlength="12">
+                <input type="text" id="new-room-name-input" class="lobby-input" placeholder="ชื่อห้อง (เช่น ห้องของตู่)" maxlength="20">
+                <input type="password" id="new-room-password-input" class="lobby-input" placeholder="ตั้งรหัสผ่าน (4 ตัวเลข)" maxlength="4" inputmode="numeric">
+                <button id="confirm-create-btn" class="lobby-button">ยืนยันและสร้างห้อง</button>
             </div>
-
-            <div id="game-controls">
-                
-                <div id="number-setup" class="section">
-                    <h2 class="section-title">ตั้งเลขลับของคุณ 🎲</h2>
-                    <p>กรุณาตั้งเลข 4 หลักที่ไม่ซ้ำกัน</p>
-                    <div class="input-container">
-                        <input type="text" id="number-setup-input" class="number-setup-input" maxlength="4" inputmode="numeric">
-                        <button id="confirm-number-btn" class="submit-btn">ยืนยัน</button>
-                    </div>
-                </div>
-
-                <div class="section guess-controls">
-                    <h2 class="section-title">ทายเลข</h2>
-                    <div id="guess-number-container" class="input-container">
-                        <div class="number-input"></div>
-                        <div class="number-input"></div>
-                        <div class="number-input"></div>
-                        <div class="number-input"></div>
-                    </div>
-                    <div id="number-pad-container" class="number-grid"></div>
-                    <div class="button-group">
-                        <button id="submit-guess-btn" class="submit-btn">ส่งคำทาย</button>
-                        <button id="delete-guess-btn" class="delete-btn">ลบ</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="section player-info">
-                <div class="player-info-card my-card">
-                    <h3 id="my-number-display">เลขลับของคุณ: XXXX</h3>
-                    <div class="guesses-container">
-                        <h4 class="guess-title">ประวัติคำทายที่คุณโดนทาย</h4>
-                        <ul id="my-guesses-history" class="guess-list"></ul>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
+    <!-- Screen 4: Room List Screen -->
+    <div id="room-list-screen" class="game-screen">
+        <div class="room-list-container">
+            <h2 class="room-list-title">รายการห้องที่ว่างอยู่</h2>
+            <div id="room-list-content">
+                <p class="no-rooms-message">ยังไม่มีห้องว่างในขณะนี้...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 4.5: Joiner Setup Screen -->
+    <div id="joiner-setup-screen" class="game-screen">
+        <div class="lobby-container">
+            <div class="lobby-box">
+                <h2 class="lobby-title">ตั้งชื่อของคุณ</h2>
+                <p class="lobby-description">คุณกำลังจะเข้าร่วมห้อง <strong id="joiner-room-name-display"></strong></p>
+                <input type="text" id="joiner-name-input" class="lobby-input" placeholder="กรอกชื่อของคุณที่นี่" maxlength="12">
+                <button id="confirm-join-btn" class="lobby-button">ยืนยันและเข้าร่วม</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 5: Waiting Room Screen -->
+    <div id="waiting-room-screen" class="game-screen">
+        <div class="waiting-room-container">
+            <h2 class="waiting-room-title">ห้องรอเล่น</h2>
+            <p class="room-code-display">ชื่อห้อง: <span id="room-code-text">----</span></p>
+            <div class="player-list">
+                <div class="player-slot" id="player1-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 1</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <div class="player-slot" id="player2-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 2</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <div class="player-slot" id="player3-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 3</span><span class="player-status waiting">กำลังรอ...</span></div>
+                <div class="player-slot" id="player4-slot"><div class="player-avatar-initial">?</div><span class="player-name">ผู้เล่น 4</span><span class="player-status waiting">กำลังรอ...</span></div>
+            </div>
+            <p id="waiting-message" class="waiting-message">แชร์ชื่อห้องและรหัสผ่านให้เพื่อนของคุณ!</p>
+            <button id="start-game-btn" class="lobby-button" disabled>เริ่มเกม</button>
+        </div>
+    </div>
+
+    <!-- Screen 6: Main Game Screen -->
+    <div id="main-game-screen" class="game-screen">
+        <div id="turn-indicator" class="turn-indicator">
+            <span id="turn-text">กำลังรอ...</span>
+            <span id="turn-timer-display"></span>
+        </div>
+        <div class="main-container">
+            <div class="section"><h2 class="section-title">⭐ เลขของเรา</h2><div id="our-number-display" class="input-container"></div></div>
+            <div class="section"><h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2><div id="player-summary-grid" class="player-summary-grid"></div></div>
+            <div class="section"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
+            <div class="section guess-controls">
+                <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
+                <div id="guess-number-container" class="input-container"><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div></div>
+                <div id="number-pad-container" class="number-grid"></div>
+            </div>
+            <div class="final-answer-section">
+                <div class="final-answer-chances">โอกาสตอบ: <span id="chance-1" class="chance-dot"></span><span id="chance-2" class="chance-dot"></span><span id="chance-3" class="chance-dot"></span></div>
+                <button id="submit-final-answer-btn" class="final-answer-button">ส่งคำตอบสุดท้าย</button>
+            </div>
+        </div>
+        <div id="spectator-overlay" class="spectator-overlay"><div id="spectator-message" class="spectator-message">คุณแพ้แล้ว! กำลังรับชม...</div></div>
+    </div>
+
+    <!-- Screen 7: Game Over Screen -->
     <div id="game-over-screen" class="game-screen">
-        <div class="game-over-content">
-            <h1 id="winner-display" class="winner-text"></h1>
-            <div class="button-group">
+        <div class="game-over-container">
+            <h1 id="game-over-title" class="game-over-title">คุณชนะ!</h1>
+            <h2 id="winner-name" class="winner-name"></h2>
+            <p id="game-over-message" class="game-over-message"></p>
+            <div class="game-over-numbers" id="game-over-numbers-container"></div>
+            <div class="game-over-buttons">
                 <button id="rematch-btn" class="lobby-button">เล่นอีกครั้ง</button>
-                <button id="end-game-btn" class="lobby-button">จบเกม</button>
+                <button id="back-to-lobby-btn" class="lobby-button secondary">กลับหน้าหลัก</button>
             </div>
         </div>
     </div>
 
+    <!-- Modals and Toasts -->
     <div id="password-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 class="modal-title">กรอกรหัสผ่านสำหรับห้อง</h3>
@@ -128,12 +159,23 @@
     <div id="toast" class="toast-notification"></div>
     <div id="action-toast" class="action-toast"><p id="action-toast-text"></p></div>
 
+    <!-- Sound Control Button -->
     <div id="sound-control" class="sound-control"><span id="sound-icon">🔊</span></div>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <script src="script.js?v1.4"></script>
+    <!-- ================================================== -->
+    <!--           >>>>> การเปลี่ยนแปลงที่สำคัญ <<<<<           -->
+    <!-- ================================================== -->
+    <!-- 
+        เปลี่ยนจากการเรียก script.js ไฟล์เดียว
+        มาเป็นการเรียก js/main.js ซึ่งเป็นไฟล์หลัก
+        และต้องเพิ่ม type="module" เพื่อให้รองรับการ import/export
+        จากไฟล์อื่นๆ (ui.js, firebase.js, game.js)
+    -->
+    <script type="module" src="js/main.js?v1.5"></script>
 
 </body>
 </html>
