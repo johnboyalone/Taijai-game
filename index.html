@@ -8,15 +8,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-    <!-- ===== วิธีแก้แคชแบบคลาสสิก: ใส่เลขสุ่มที่ไฟล์ CSS โดยตรง ===== -->
+    <!-- สไตล์ชีตยังคงเหมือนเดิม -->
     <link rel="stylesheet" href="style.css?v1.4">
 </head>
 <body>
 
-    <!-- เนื้อหา HTML ทั้งหมดของเกม -->
+    <!-- ================================================== -->
+    <!--           เนื้อหา HTML ทั้งหมดยังคงเหมือนเดิมทุกส่วน           -->
+    <!-- ================================================== -->
+
+    <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
         <div class="splash-content">
-            <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v1.3</span></h1>
+            <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v1.5</span></h1>
             <div class="instructions">
                 <h2>วิธีการเล่น (2-4 คน)</h2>
                 <ol>
@@ -161,9 +165,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
-    <!-- ===== วิธีแก้แคชแบบคลาสสิก: ใส่เลขสุ่มที่ไฟล์ JS โดยตรง ===== -->
-    <script src="script.js?v1.4"></script>
+    <script type="module" src="js/main.js?v1.5"></script>
 
 </body>
 </html>
