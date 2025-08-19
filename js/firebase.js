@@ -36,12 +36,12 @@ export function getCurrentUserId() {
 export function createRoom(hostName, roomName, password) {
     const newRoomId = db.ref('rooms').push().key;
     const userId = getCurrentUserId();
-    const newPlayerId = `player${1}`;
+    const newPlayerId = 'player1';
 
     const roomData = {
         roomName, hostName, password,
         players: {
-            [newPlayerId]: { uid: userId, name: hostName, connected: true, isHost: true, numberSet: false, finalChances: 3, status: 'playing' },
+            'player1': { uid: userId, name: hostName, connected: true, isHost: true, numberSet: false, finalChances: 3, status: 'playing' },
             'player2': { uid: null, name: 'ผู้เล่น 2', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
             'player3': { uid: null, name: 'ผู้เล่น 3', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
             'player4': { uid: null, name: 'ผู้เล่น 4', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' }
