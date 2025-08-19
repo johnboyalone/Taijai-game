@@ -29,57 +29,28 @@ function setupAudio() {
 
 function playSound(sound) {
     if (isMuted) return;
-    if (sound) {
-        sound.currentTime = 0;
-        sound.play().catch(error => console.log(`Error playing sound: ${error.message}`));
-    }
+    sound.currentTime = 0;
+    sound.play().catch(e => console.error("Error playing sound:", e));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    setupAudio();
-    setupInitialListeners();
-    onAuthStateChanged(user => {
-        if (user) {
-            showScreen('splash');
-        } else {
-            signInAnonymously();
-        }
-    });
-});
-
-function setupInitialListeners() {
-    screens.splash.addEventListener('click', handleSplashClick);
-    ui.soundControl.addEventListener('click', toggleMute);
-    ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
-    ui.goToJoinBtn.addEventListener('click', handleGoToJoin);
-    ui.confirmCreateBtn.addEventListener('click', handleCreateRoom);
-    ui.passwordModal.addEventListener('click', (e) => { if (e.target === ui.passwordModal) ui.passwordModal.classList.remove('show'); });
-    ui.passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
-    ui.confirmJoinBtn.addEventListener('click', handleConfirmJoin);
-    ui.startGameBtn.addEventListener('click', handleStartGame);
-    ui.submitFinalAnswerBtn.addEventListener('click', handleFinalAnswer);
-    ui.rematchBtn.addEventListener('click', handleRematch);
-    ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
-    createNumberPad(handleNumberPadClick);
-}
-
-function handleSplashClick() {
-    playSound(sounds.click);
-    showScreen('lobby');
-    if (sounds.background.paused && !isMuted) {
-        sounds.background.play().catch(e => console.log("Autoplay was prevented."));
-    }
+function stopSound(sound) {
+    sound.pause();
+    sound.currentTime = 0;
 }
 
 function toggleMute() {
     isMuted = !isMuted;
-    ui.soundIcon.textContent = isMuted ? '🔇' : '🔊';
+    ui.muteBtn.textContent = isMuted ? '🔇' : '🔊';
     if (isMuted) {
-        sounds.background.pause();
+        stopSound(sounds.background);
     } else {
-        sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+        playSound(sounds.background);
     }
+}
+
+function handleGoToCreate() {
     playSound(sounds.click);
+    showScreen('createRoom');
 }
 
 function handleGoToJoin() {
@@ -106,23 +77,42 @@ function handleGoToJoin() {
 function handleRoomItemClick(room, playerCount) {
     playSound(sounds.click);
     if (playerCount >= 4) {
-        showToast("ห้องนี้เต็มแล้ว");
+        showToast('ห้องเต็มแล้ว');
         return;
     }
-    ui.passwordModalRoomName.textContent = `ห้อง: ${room.roomName}`;
-    ui.passwordModal.dataset.roomId = room.id;
-    ui.passwordModal.dataset.roomName = room.roomName;
-    ui.passwordModal.classList.add('show');
+
+    if (room.password) {
+        joiningRoomData = room;
+        ui.passwordModalRoomName.textContent = room.roomName;
+        ui.passwordModal.style.display = 'flex';
+    } else {
+        joiningRoomData = room;
+        showScreen('joinerSetup');
+        ui.joinerRoomNameDisplay.textContent = room.roomName;
+    }
 }
 
-async function handleCreateRoom() {
+async function handlePasswordSubmit() {
+    playSound(sounds.click);
+    const password = ui.passwordModalInput.value;
+    const isCorrect = await verifyPassword(joiningRoomData.id, password);
+    if (isCorrect) {
+        ui.passwordModal.style.display = 'none';
+        ui.passwordModalInput.value = '';
+        showScreen('joinerSetup');
+        ui.joinerRoomNameDisplay.textContent = joiningRoomData.roomName;
+    } else {
+        showToast('รหัสผ่านไม่ถูกต้อง');
+    }
+}
+
+async function handleConfirmCreate() {
     playSound(sounds.click);
     const hostName = ui.hostNameInput.value.trim();
     const roomName = ui.newRoomNameInput.value.trim();
-    const password = ui.newRoomPasswordInput.value;
-
-    if (!hostName || !roomName || !/^\d{4}$/.test(password)) {
-        showToast('กรุณากรอกข้อมูลให้ครบ (รหัสผ่าน 4 ตัวเลข)');
+    const password = ui.newRoomPasswordInput.value.trim();
+    if (!hostName || !roomName) {
+        showToast('กรุณากรอกชื่อและชื่อห้อง');
         return;
     }
 
@@ -130,29 +120,13 @@ async function handleCreateRoom() {
         const { newRoomId, newPlayerId } = await createRoom(hostName, roomName, password);
         currentRoomId = newRoomId;
         currentPlayerId = newPlayerId;
+        setupDisconnectHandler(currentRoomId, currentPlayerId);
         startListeningToRoomUpdates();
         showScreen('waiting');
-        showToast(`สร้างห้อง "${roomName}" สำเร็จ!`);
+        showToast(`สร้างห้อง ${roomName} สำเร็จ!`);
     } catch (error) {
-        showToast('เกิดข้อผิดพลาด: ' + error.message);
-    }
-}
-
-async function handlePasswordSubmit() {
-    playSound(sounds.click);
-    const roomId = ui.passwordModal.dataset.roomId;
-    const roomName = ui.passwordModal.dataset.roomName;
-    const enteredPassword = ui.passwordModalInput.value;
-
-    const isCorrect = await verifyPassword(roomId, enteredPassword);
-    if (isCorrect) {
-        ui.passwordModalInput.value = '';
-        ui.passwordModal.classList.remove('show');
-        joiningRoomData = { id: roomId, name: roomName };
-        ui.joinerRoomNameDisplay.textContent = roomName;
-        showScreen('joinerSetup');
-    } else {
-        showToast('รหัสผ่านไม่ถูกต้อง!');
+        console.error("Create room failed:", error);
+        showToast("ไม่สามารถสร้างห้องได้");
     }
 }
 
@@ -170,178 +144,136 @@ async function handleConfirmJoin() {
         const { newRoomId, newPlayerId } = await joinRoom(joiningRoomData.id, joinerName);
         currentRoomId = newRoomId;
         currentPlayerId = newPlayerId;
+        setupDisconnectHandler(currentRoomId, currentPlayerId);
         startListeningToRoomUpdates();
         showScreen('waiting');
         showToast(`เข้าร่วมห้องสำเร็จ!`);
     } catch (error) {
+        console.error("Join room failed:", error);
         showToast(error.message);
         showScreen('lobby');
     }
 }
 
-function handleStartGame() {
+function handleReadyBtn() {
     playSound(sounds.click);
-    if (ui.startGameBtn.disabled) return;
+    db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ numberSet: true });
+}
 
-    db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.gameState === 'waiting') {
-            const connectedPlayerIds = Object.keys(roomData.players).filter(pId => roomData.players[pId].connected);
-            roomData.gameState = 'setup';
-            roomData.turnOrder = connectedPlayerIds;
-            roomData.turn = connectedPlayerIds[0];
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
-            roomData.lastAction = null;
-        }
-        return roomData;
+function handleStartBtn() {
+    playSound(sounds.click);
+    db.ref(`rooms/${currentRoomId}`).update({
+        gameState: 'playing',
+        turn: 'player1',
+        turnStartTime: firebase.database.ServerValue.TIMESTAMP
     });
 }
 
-function handleNumberPadClick(value) {
+function handleNumberPadClick(event) {
     playSound(sounds.click);
-    if (ui.turnIndicator.classList.contains('their-turn')) {
-        showToast("ยังไม่ถึงตาของคุณ!");
+    const value = event.target.dataset.value;
+    if (!value) return;
+
+    if (value === 'ทาย') {
+        const myData = roomListenerData?.data?.players[currentPlayerId];
+        if (myData?.status === 'playing') {
+            submitGuess(currentRoomId, currentPlayerId, currentGuess);
+            currentGuess = [];
+            updateGuessDisplay(currentGuess);
+        } else {
+            submitFinalAnswer(currentRoomId, currentPlayerId, currentGuess, currentTargetId);
+            currentGuess = [];
+            updateGuessDisplay(currentGuess);
+        }
         return;
     }
-    if (value === 'ลบ') {
-        if (currentGuess.length > 0) currentGuess.pop();
-    } else if (value === 'ทาย') {
-        if (!currentTargetId) { showToast("กรุณาเลือกเป้าหมายที่จะทายก่อน"); return; }
-        if (currentGuess.length === GUESS_LENGTH) {
-            submitGuess(currentRoomId, currentPlayerId, currentTargetId, currentGuess);
-            currentGuess = [];
-        } else {
-            showToast(`กรุณาใส่เลขให้ครบ ${GUESS_LENGTH} ตัว`);
-        }
-    } else {
-        if (currentGuess.length < GUESS_LENGTH) currentGuess.push(value);
-    }
-    updateGuessDisplay(currentGuess, GUESS_LENGTH);
-}
-
-function handleFinalAnswer() {
-    playSound(sounds.click);
-    if (ui.turnIndicator.classList.contains('their-turn')) { showToast("ไม่สามารถส่งคำตอบในตาของเพื่อนได้!"); return; }
-    if (!currentTargetId) { showToast("กรุณาเลือกเป้าหมายที่จะส่งคำตอบสุดท้าย"); return; }
-    if (currentGuess.length !== GUESS_LENGTH) { showToast(`กรุณาใส่เลขคำตอบให้ครบ ${GUESS_LENGTH} ตัว`); return; }
     
-    submitFinalAnswer(currentRoomId, currentPlayerId, currentTargetId, currentGuess, playSound, sounds.wrong);
-    currentGuess = [];
-    updateGuessDisplay(currentGuess, GUESS_LENGTH);
-}
-
-function handleRematch() {
-    playSound(sounds.click);
-    ui.rematchBtn.disabled = true;
-    ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
-    requestRematch(currentRoomId, currentPlayerId);
-}
-
-function handleTargetSelection(selectedTargetId) {
-    playSound(sounds.click);
-    currentTargetId = selectedTargetId;
-    db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
-        if(snapshot.exists()) {
-            const roomData = snapshot.val();
-            updatePlayerSummaryGrid(roomData, currentPlayerId, { currentTargetId: currentTargetId, handler: handleTargetSelection });
-            updateHistoryLog(roomData, currentTargetId);
+    if (value === 'ลบ') {
+        currentGuess.pop();
+    } else {
+        if (currentGuess.length < GUESS_LENGTH) {
+            currentGuess.push(value);
+        } else {
+            showToast('เกินจำนวนที่กำหนด');
         }
-    });
+    }
+    updateGuessDisplay(currentGuess);
+}
+
+function handleTargetSelection(targetId) {
+    playSound(sounds.click);
+    currentTargetId = targetId;
+    updatePlayerSummaryGrid(roomListenerData.data, currentPlayerId, { currentTargetId: currentTargetId, handler: handleTargetSelection });
+    updateHistoryLog(roomListenerData.data, currentTargetId);
+    showActionToast(`กำลังจะทายตัวเลขของ ${roomListenerData.data.players[targetId].name}`);
+}
+
+function handleSkipTurn() {
+    playSound(sounds.click);
+    skipTurn(currentRoomId, currentPlayerId);
+}
+
+function handleRematchBtn() {
+    playSound(sounds.click);
+    requestRematch(currentRoomId, currentPlayerId);
 }
 
 function startListeningToRoomUpdates() {
     if (roomListenerData) detachRoomListener(roomListenerData);
-    setupDisconnectHandler(currentRoomId, currentPlayerId);
-    roomListenerData = listenToRoomUpdates(currentRoomId, (roomData) => {
+    roomListenerData = listenToRoomUpdates(currentRoomId, roomData => {
         if (!roomData) {
-            if (turnTimerInterval) clearInterval(turnTimerInterval);
-            cancelDisconnectHandler(currentRoomId, currentPlayerId);
-            showToast("ห้องถูกปิดแล้ว กลับสู่หน้าหลัก");
-            setTimeout(() => window.location.reload(), 3000);
+            console.log("Room deleted or doesn't exist. Redirecting to lobby.");
+            showScreen('lobby');
             return;
         }
 
-        if (lastGameState !== roomData.gameState) {
-            if (turnTimerInterval) clearInterval(turnTimerInterval);
-            lastGameState = roomData.gameState;
-        }
-
-        const connectedPlayers = Object.values(roomData.players).filter(p => p.connected);
-        if (roomData.rematch && Object.values(roomData.rematch).filter(v => v === true).length === connectedPlayers.length && connectedPlayers.length > 1) {
-            if (currentPlayerId === 'player1') {
-                resetGameForRematch(currentRoomId, roomData);
+        roomListenerData.data = roomData;
+        const myData = roomData.players[currentPlayerId];
+        
+        if (roomData.gameState !== lastGameState) {
+            stopSound(sounds.background);
+            if (roomData.gameState === 'playing') {
+                showScreen('game');
+                createNumberPad(handleNumberPadClick);
+            } else if (roomData.gameState === 'finished') {
+                displayGameOver(roomData, currentPlayerId, playSound, sounds.win);
+                updateGameOverUI(roomData, currentPlayerId);
             }
-            return;
         }
-
-        if (roomData.lastAction && roomData.lastAction.timestamp > (Date.now() - 4000)) {
-            const { actorName, targetName, type } = roomData.lastAction;
-            let message = '';
-            if (type === 'guess') message = `<strong>${actorName}</strong> กำลังทายเลขของ <strong>${targetName}</strong>`;
-            else if (type === 'final_correct') message = `<strong>${actorName}</strong> ทายเลขของ <strong>${targetName}</strong> ถูกต้อง!`;
-            else if (type === 'final_wrong') message = `<strong>${actorName}</strong> ทายเลขของ <strong>${targetName}</strong> ผิด!`;
-            if(message) showActionToast(message);
-        }
-
+        lastGameState = roomData.gameState;
+        
         switch (roomData.gameState) {
             case 'waiting':
-                showScreen('waiting');
                 updateWaitingRoomUI(roomData, currentPlayerId);
                 break;
-            case 'setup':
-                if (!screens.game.classList.contains('show')) initializeGameUI(roomData);
-                const allPlayersSetNumber = connectedPlayers.every(p => p.numberSet);
-                if (allPlayersSetNumber && currentPlayerId === 'player1') {
-                    db.ref(`rooms/${currentRoomId}`).update({
-                        gameState: 'playing',
-                        turnStartTime: firebase.database.ServerValue.TIMESTAMP
-                    });
-                }
-                break;
             case 'playing':
-                if (!screens.game.classList.contains('show')) showScreen('game');
-                updatePlayingUI(roomData);
+                handleGameUpdate(roomData);
                 break;
             case 'finished':
-                if (!screens.gameOver.classList.contains('show')) {
-                    displayGameOver(roomData, currentPlayerId, playSound, sounds.win);
+                if (roomData.rematch) {
+                    const allRematch = Object.keys(roomData.rematch).length === roomData.playerCount;
+                    if (allRematch) {
+                        resetGameForRematch(currentRoomId, roomData);
+                    }
                 }
-                updateGameOverUI(roomData, currentPlayerId);
                 break;
         }
     });
 }
 
-function initializeGameUI(roomData) {
-    showScreen('game');
-    currentGuess = [];
-    updateGuessDisplay(currentGuess, GUESS_LENGTH);
-    ui.historyLog.innerHTML = '';
-
-    const ourNumber = generateRandomNumber();
-    ui.ourNumberDisplay.innerHTML = '';
-    for (let i = 0; i < GUESS_LENGTH; i++) {
-        ui.ourNumberDisplay.innerHTML += `<div class="number-input">${ourNumber[i]}</div>`;
-    }
-
-    const firstTarget = roomData.turnOrder.find(id => id !== currentPlayerId && roomData.players[id]?.status === 'playing');
-    currentTargetId = firstTarget || null;
-
-    db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({ number: ourNumber.join(''), numberSet: true });
-    showToast('เกมเริ่มแล้ว! กรุณารอผู้เล่นทุกคนตั้งเลข...', 3000);
-}
-
-function updatePlayingUI(roomData) {
+function handleGameUpdate(roomData) {
     const myData = roomData.players[currentPlayerId];
-    if (myData.status === 'eliminated') {
-        ui.spectatorOverlay.classList.add('show');
-        ui.spectatorMessage.textContent = `คุณแพ้แล้ว! กำลังรับชม...`;
-    } else {
-        ui.spectatorOverlay.classList.remove('show');
+    const activePlayers = Object.keys(roomData.players).filter(pId => roomData.players[pId].status === 'playing');
+
+    if (myData?.status === 'eliminated') {
+        showActionToast("คุณถูกกำจัดออกจากเกมแล้ว");
+        showScreen('waiting');
+        if (turnTimerInterval) clearInterval(turnTimerInterval);
+        return;
     }
 
-    const activePlayers = Object.values(roomData.players).filter(p => p.status === 'playing' && p.connected);
-    if (activePlayers.length <= 1 && roomData.playerCount > 1 && roomData.gameState === 'playing') {
-        if (currentPlayerId === 'player1') {
+    if (activePlayers.length <= 1) {
+        if (myData?.status === 'playing') {
             db.ref(`rooms/${currentRoomId}`).update({
                 gameState: 'finished',
                 winner: activePlayers[0]?.uid || null,
@@ -365,7 +297,7 @@ function handleTurnTimer(roomData) {
     if (roomData.turn !== currentPlayerId) return;
 
     const turnStartTime = roomData.turnStartTime || Date.now();
-    
+
     const updateTimer = () => {
         const timePassed = (Date.now() - turnStartTime) / 1000;
         let timeLeft = Math.round(TURN_DURATION - timePassed);
@@ -386,3 +318,39 @@ function handleTurnTimer(roomData) {
     updateTimer();
     turnTimerInterval = setInterval(updateTimer, 1000);
 }
+
+function handleResetApp() {
+    if (roomListenerData) detachRoomListener(roomListenerData);
+    if (roomListListenerData) detachRoomListListener(roomListListenerData);
+    if (turnTimerInterval) clearInterval(turnTimerInterval);
+    currentRoomId = null;
+    joiningRoomData = null;
+    currentPlayerId = null;
+    currentTargetId = null;
+    currentGuess = [];
+    lastGameState = null;
+    showScreen('lobby');
+}
+
+window.addEventListener('load', () => {
+    onAuthStateChanged(user => {
+        if (user) {
+            setupAudio();
+            ui.goToCreateBtn.addEventListener('click', handleGoToCreate);
+            ui.goToJoinBtn.addEventListener('click', handleGoToJoin);
+            ui.confirmCreateBtn.addEventListener('click', handleConfirmCreate);
+            ui.passwordModalSubmitBtn.addEventListener('click', handlePasswordSubmit);
+            ui.confirmJoinBtn.addEventListener('click', handleConfirmJoin);
+            ui.readyBtn.addEventListener('click', handleReadyBtn);
+            ui.startBtn.addEventListener('click', handleStartBtn);
+            ui.skipTurnBtn.addEventListener('click', handleSkipTurn);
+            ui.rematchBtn.addEventListener('click', handleRematchBtn);
+            ui.muteBtn.addEventListener('click', toggleMute);
+            
+            showScreen('lobby');
+        } else {
+            showScreen('splash');
+            signInAnonymously();
+        }
+    });
+});
