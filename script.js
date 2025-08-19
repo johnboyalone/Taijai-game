@@ -16,18 +16,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const db = firebase.database();
 
     // =================================================================
+    // ======== FIREBASE AUTHENTICATION ========
+    // =================================================================
+    let currentPlayerId = null;
+    firebase.auth().signInAnonymously().catch(function(error) {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        console.error("Authentication failed:", errorCode, errorMessage);
+        showToast("ไม่สามารถเชื่อมต่อกับเกมได้! โปรดลองอีกครั้ง");
+    });
+
+    firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+            currentPlayerId = user.uid;
+            console.log("Authenticated with UID:", currentPlayerId);
+        } else {
+            currentPlayerId = null;
+        }
+    });
+
+    // =================================================================
     // ======== GAME STATE VARIABLES ========
     // =================================================================
     let currentRoomId = null;
     let joiningRoomData = null; 
-    let currentPlayerId = null;
     let roomListener = null;
     let roomListListener = null;
     let currentGuess = [];
     const GUESS_LENGTH = 4;
     let isMuted = false;
     let turnTimerInterval = null;
-    const TURN_DURATION = 20; // อัปเดตเวลาเป็น 20 วินาที
+    const TURN_DURATION = 20;
 
     // =================================================================
     // ======== AUDIO REFERENCES & FUNCTIONS ========
@@ -104,10 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
         soundControl: document.getElementById('sound-control'),
         soundIcon: document.getElementById('sound-icon'),
         
-        // New UI for guesses on turn player
         playerSummaryGrid: document.getElementById('player-summary-grid'),
     };
-    // =================================================================
+// =================================================================
     // ======== UTILITY & UI FUNCTIONS ========
     // =================================================================
     function showScreen(screenId) {
@@ -180,38 +198,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return { strikes, balls };
     }
+// =================================================================
+    // ======== ROOM & PLAYER MANAGEMENT FUNCTIONS ========
     // =================================================================
-    // ======== FIREBASE & GAME LOGIC FUNCTIONS ========
-    // =================================================================
-    function setupInitialListeners() {
-        ui.createRoomBtn.addEventListener('click', createRoom);
-        ui.joinRoomBtn.addEventListener('click', showRoomList);
-        ui.passwordModalSubmitBtn.addEventListener('click', () => joinRoom(joiningRoomData.roomId, ui.passwordModalInput.value));
-        ui.readyBtn.addEventListener('click', setPlayerReady);
-        ui.confirmNumberBtn.addEventListener('click', confirmPlayerNumber);
-        ui.submitGuessBtn.addEventListener('click', submitGuess);
-        ui.deleteGuessBtn.addEventListener('click', () => {
-            if (currentGuess.length > 0) {
-                currentGuess.pop();
-                updateGuessDisplay();
-            }
-        });
-        ui.rematchBtn.addEventListener('click', requestRematch);
-        ui.endGameBtn.addEventListener('click', () => window.location.reload());
-        ui.soundControl.addEventListener('click', toggleSound);
-        
-        generateNumberPad();
-    }
-
-    function toggleSound() {
-        isMuted = !isMuted;
-        ui.soundIcon.textContent = isMuted ? '🔇' : '🔊';
-        localStorage.setItem('isMuted', isMuted);
-    }
-    
     function createRoom() {
         const username = ui.usernameInput.value;
-        if (!username) { showToast('กรุณากรอกชื่อผู้เล่น'); return; }
+        if (!username || !currentPlayerId) { showToast('กรุณากรอกชื่อผู้เล่นและลองอีกครั้ง'); return; }
 
         const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
         const roomRef = db.ref('rooms/' + roomId);
@@ -219,8 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const newRoomData = {
             status: 'waiting',
             players: {
-                [username]: {
-                    id: username,
+                [currentPlayerId]: {
+                    id: currentPlayerId,
                     name: username,
                     ready: false,
                     connected: true,
@@ -236,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         roomRef.set(newRoomData).then(() => {
             currentRoomId = roomId;
-            currentPlayerId = username;
             setupRoomListener();
             showScreen('lobby');
             showToast('สร้างห้องสำเร็จ! รหัสห้องคือ ' + roomId);
@@ -247,9 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showRoomList() {
         const username = ui.usernameInput.value;
-        if (!username) { showToast('กรุณากรอกชื่อผู้เล่น'); return; }
+        if (!username || !currentPlayerId) { showToast('กรุณากรอกชื่อผู้เล่นและลองอีกครั้ง'); return; }
         
-        currentPlayerId = username;
         showScreen('lobby');
         ui.lobbyStatus.textContent = "กำลังค้นหาห้องที่เปิดอยู่...";
         ui.roomList.innerHTML = '';
@@ -292,6 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function joinRoom(roomId, password = null) {
+        if (!currentPlayerId) { showToast('โปรดรอสักครู่และลองเข้าร่วมอีกครั้ง'); return; }
+
         db.ref(`rooms/${roomId}`).transaction(roomData => {
             if (roomData) {
                 if (roomData.password && roomData.password !== password) {
@@ -310,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     roomData.players[currentPlayerId] = {
                         id: currentPlayerId,
-                        name: currentPlayerId,
+                        name: ui.usernameInput.value,
                         ready: false,
                         connected: true,
                         isHost: false,
@@ -329,7 +321,37 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('เข้าร่วมห้องสำเร็จ!');
         });
     }
-    
+
+    function setPlayerReady() {
+        if (currentRoomId && currentPlayerId) {
+            db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}/ready`).set(true);
+            ui.readyBtn.disabled = true;
+            ui.readyBtn.textContent = 'พร้อมแล้ว!';
+        }
+    }
+
+    function confirmPlayerNumber() {
+        const number = ui.numberSetupInput.value;
+        if (number.length !== GUESS_LENGTH || !/^\d+$/.test(number) || new Set(number.split('')).size !== GUESS_LENGTH) {
+            showToast(`กรุณากรอกเลข 4 หลักที่ไม่ซ้ำกัน`);
+            return;
+        }
+
+        db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({
+            number: number,
+            numberSet: true,
+            status: 'playing',
+            finalChances: 3,
+            guesses: null
+        }).then(() => {
+            showToast("ตั้งเลขลับสำเร็จ!");
+        }).catch(error => {
+            showToast("ตั้งเลขลับไม่สำเร็จ: " + error.message);
+        });
+    }
+// =================================================================
+    // ======== GAMEPLAY & LIFECYCLE FUNCTIONS ========
+    // =================================================================
     function setupRoomListener() {
         if (roomListener) {
             db.ref(`rooms/${currentRoomId}`).off('value', roomListener);
@@ -411,34 +433,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast("ผู้เล่นทุกคนพร้อมแล้ว! รอเจ้าของห้องเริ่มเกม");
             }
         }
-    }
-    
-    function setPlayerReady() {
-        if (currentRoomId && currentPlayerId) {
-            db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}/ready`).set(true);
-            ui.readyBtn.disabled = true;
-            ui.readyBtn.textContent = 'พร้อมแล้ว!';
-        }
-    }
-
-    function confirmPlayerNumber() {
-        const number = ui.numberSetupInput.value;
-        if (number.length !== GUESS_LENGTH || !/^\d+$/.test(number) || new Set(number.split('')).size !== GUESS_LENGTH) {
-            showToast(`กรุณากรอกเลข 4 หลักที่ไม่ซ้ำกัน`);
-            return;
-        }
-
-        db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({
-            number: number,
-            numberSet: true,
-            status: 'playing',
-            finalChances: 3,
-            guesses: null
-        }).then(() => {
-            showToast("ตั้งเลขลับสำเร็จ!");
-        }).catch(error => {
-            showToast("ตั้งเลขลับไม่สำเร็จ: " + error.message);
-        });
     }
     
     function updateGame(roomData) {
