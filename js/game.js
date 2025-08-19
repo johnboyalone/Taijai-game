@@ -1,4 +1,3 @@
-// js/game.js
 import { db } from './firebase.js';
 import { ui, showToast, updateGuessDisplay } from './ui.js';
 
@@ -50,7 +49,7 @@ export function createNumberPad(onPadClick) {
 export function submitGuess(currentRoomId, currentPlayerId, currentTargetId, currentGuess) {
     const guessString = currentGuess.join('');
     db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.turn === currentPlayerId) {
+        if (roomData && roomData.gameState === 'playing' && roomData.turn === currentPlayerId) {
             const opponentNumber = roomData.players[currentTargetId].number;
             const clues = calculateClues(currentGuess, opponentNumber.split(''));
             const guessData = { guess: guessString, strikes: clues.strikes, balls: clues.balls, by: currentPlayerId };
@@ -74,7 +73,7 @@ export function submitGuess(currentRoomId, currentPlayerId, currentTargetId, cur
 export function submitFinalAnswer(currentRoomId, currentPlayerId, currentTargetId, currentGuess, playSound, wrongSound) {
     const finalAnswer = currentGuess.join('');
     db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.turn === currentPlayerId) {
+        if (roomData && roomData.gameState === 'playing' && roomData.turn === currentPlayerId) {
             const targetPlayer = roomData.players[currentTargetId];
             const actorPlayer = roomData.players[currentPlayerId];
             let actionType = '';
@@ -101,7 +100,7 @@ export function submitFinalAnswer(currentRoomId, currentPlayerId, currentTargetI
 
 export function skipTurn(currentRoomId, currentPlayerId) {
     db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.turn === currentPlayerId) {
+        if (roomData && roomData.gameState === 'playing' && roomData.turn === currentPlayerId) {
             const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
             const currentTurnIndex = activePlayers.indexOf(roomData.turn);
             const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
