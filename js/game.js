@@ -126,7 +126,6 @@ export function skipTurn(currentRoomId, currentPlayerId) {
                 roomData.turn = activePlayers[nextTurnIndex];
                 roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
             } else {
-                // No active players left, handle game over
                 roomData.gameState = 'finished';
             }
         }
