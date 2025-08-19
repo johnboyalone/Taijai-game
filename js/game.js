@@ -6,7 +6,7 @@ let currentTargetId = null;
 let turnTimerInterval = null;
 let callbacks = {};
 
-const GUESS_LENGTH = 4;
+export const GUESS_LENGTH = 4;
 const TURN_DURATION = 20;
 
 export function setCallbacks(c) {
