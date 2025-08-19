@@ -1,4 +1,4 @@
-import { db, auth, signInAnonymously, onAuthStateChanged, getCurrentUserId, createRoom, joinRoom, listenToRoomList, detachRoomListListener, verifyPassword, listenToRoomUpdates, detachRoomListener, setupDisconnectHandler, cancelDisconnectHandler } from './firebase.js';
+import { db, auth, signInAnonymously, onAuthStateChanged, createRoom, joinRoom, listenToRoomList, detachRoomListListener, verifyPassword, listenToRoomUpdates, detachRoomListener, setupDisconnectHandler, cancelDisconnectHandler } from './firebase.js';
 import { screens, ui, showScreen, showToast, showActionToast, updateWaitingRoomUI, updateGuessDisplay, updateChances, updateTurnIndicator, updateHistoryLog, updatePlayerSummaryGrid, displayGameOver, updateGameOverUI } from './ui.js';
 import { GUESS_LENGTH, TURN_DURATION, createNumberPad, generateRandomNumber, submitGuess, submitFinalAnswer, skipTurn, requestRematch, resetGameForRematch } from './game.js';
 
@@ -185,7 +185,7 @@ function handleStartGame() {
 
     db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
         if (roomData && roomData.gameState === 'waiting') {
-            const connectedPlayerIds = Object.values(roomData.players).filter(p => p.connected).map(p => p.uid);
+            const connectedPlayerIds = Object.keys(roomData.players).filter(pId => roomData.players[pId].connected);
             roomData.gameState = 'setup';
             roomData.turnOrder = connectedPlayerIds;
             roomData.turn = connectedPlayerIds[0];
@@ -344,7 +344,7 @@ function updatePlayingUI(roomData) {
         if (currentPlayerId === 'player1') {
             db.ref(`rooms/${currentRoomId}`).update({
                 gameState: 'finished',
-                winner: activePlayers[0]?.id || null,
+                winner: activePlayers[0]?.uid || null,
                 reason: 'เป็นผู้รอดชีวิตคนสุดท้าย!'
             });
         }
