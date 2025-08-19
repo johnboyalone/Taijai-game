@@ -7,25 +7,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-    <!-- สไตล์ชีตยังคงเหมือนเดิม -->
     <link rel="stylesheet" href="style.css?v1.4">
 </head>
 <body>
 
-    <!-- ================================================== -->
-    <!--           เนื้อหา HTML ทั้งหมดยังคงเหมือนเดิมทุกส่วน           -->
-    <!-- ================================================== -->
-
     <!-- Screen 1: Splash Screen -->
     <div id="splash-screen" class="game-screen show">
         <div class="splash-content">
-            <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v1.3</span></h1>
+            <h1 class="splash-title">เกม<br>ทายเลขทายใจ <span class="version-tag">v2.0</span></h1>
             <div class="instructions">
-                <h2>วิธีการเล่น (2-4 คน)</h2>
+                <h2>วิธีการเล่น (2-4 คน) - กติกาใหม่!</h2>
                 <ol>
                     <li>ผู้เล่นจะได้รับเลขลับ 4 หลักของตัวเอง</li>
-                    <li>ในแต่ละตา คุณมีเวลา 20 วินาทีในการทายเลขของเป้าหมาย</li>
+                    <li>ในแต่ละตา จะมีผู้เล่น 1 คนเป็น **"เป้าหมาย"**</li>
+                    <li>ผู้เล่นคนอื่นๆ ทั้งหมด จะต้อง **"รุมทาย"** เลขของเป้าหมายภายในเวลาที่กำหนด</li>
                     <li>
                         ผลการทาย:
                         <ul>
@@ -118,8 +113,8 @@
         </div>
         <div class="main-container">
             <div class="section"><h2 class="section-title">⭐ เลขของเรา</h2><div id="our-number-display" class="input-container"></div></div>
-            <div class="section"><h2 class="section-title">🎯 เลือกเป้าหมายที่จะทาย</h2><div id="player-summary-grid" class="player-summary-grid"></div></div>
-            <div class="section"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
+            <div class="section section-player-summary"><h2 class="section-title">👥 ผู้เล่นในห้อง</h2><div id="player-summary-grid" class="player-summary-grid"></div></div>
+            <div class="section section-history"><h2 class="section-title">📜 ประวัติการทาย (<span id="history-target-name"></span>)</h2><div id="history-log" class="history-log"></div></div>
             <div class="section guess-controls">
                 <h2 class="section-title">ทายเลข / ส่งคำตอบ</h2>
                 <div id="guess-number-container" class="input-container"><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div><div class="number-input"></div></div>
@@ -166,16 +161,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-    <!-- ================================================== -->
-    <!--           >>>>> การเปลี่ยนแปลงที่สำคัญ <<<<<           -->
-    <!-- ================================================== -->
-    <!-- 
-        เปลี่ยนจากการเรียก script.js ไฟล์เดียว
-        มาเป็นการเรียก js/main.js ซึ่งเป็นไฟล์หลัก
-        และต้องเพิ่ม type="module" เพื่อให้รองรับการ import/export
-        จากไฟล์อื่นๆ (ui.js, firebase.js, game.js)
-    -->
-    <script type="module" src="js/main.js?v1.5"></script>
+    <!-- Main Game Script -->
+    <script type="module" src="js/main.js?v2.0"></script>
 
 </body>
 </html>
