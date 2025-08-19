@@ -19,9 +19,9 @@ export const auth = firebase.auth();
 export async function signInAnonymously() {
     try {
         await auth.signInAnonymously();
-        console.log("Anonymous sign-in successful.");
     } catch (error) {
         console.error("Anonymous sign-in failed:", error);
+        throw error; // เพิ่มบรรทัดนี้เพื่อส่งต่อข้อผิดพลาด
     }
 }
 
@@ -66,7 +66,6 @@ export function listenToRoomList(callback) {
         const rooms = [];
         snapshot.forEach(childSnapshot => {
             const roomData = childSnapshot.val();
-            // กรองห้องที่เจ้าของห้องยังเชื่อมต่ออยู่
             if (roomData && roomData.players && roomData.players.player1 && roomData.players.player1.connected) {
                 rooms.push({ id: childSnapshot.key, ...roomData });
             }
@@ -100,7 +99,6 @@ export function joinRoom(roomId, joinerName) {
         if (players) {
             let availableSlotId = null;
             for (const playerId in players) {
-                // ตรวจสอบช่องที่ว่างและไม่มี uid
                 if (!players[playerId].connected && !players[playerId].uid) {
                     availableSlotId = playerId;
                     break;
@@ -112,7 +110,7 @@ export function joinRoom(roomId, joinerName) {
                 players[availableSlotId].name = joinerName;
                 players[availableSlotId].uid = userId;
             } else {
-                return; // ยกเลิกการ transaction ถ้าไม่มีช่องว่าง
+                return;
             }
         }
         return players;
