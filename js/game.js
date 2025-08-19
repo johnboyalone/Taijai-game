@@ -7,6 +7,7 @@ let turnTimerInterval = null;
 let callbacks = {};
 
 export const GUESS_LENGTH = 4;
+export const MAX_FINAL_CHANCES = 3; // เพิ่มบรรทัดนี้
 const TURN_DURATION = 20;
 
 export function setCallbacks(c) {
@@ -18,7 +19,7 @@ export function setCurrentTargetId(id) {
 }
 
 export function initializeGameUI(roomData, currentRoomId, currentPlayerId, mainCallbacks) {
-    callbacks = { ...callbacks, ...mainCallbacks }; // Merge callbacks
+    callbacks = { ...callbacks, ...mainCallbacks };
     callbacks.showScreen('game');
     const ourNumber = generateRandomNumber();
     ui.ourNumberDisplay.innerHTML = '';
