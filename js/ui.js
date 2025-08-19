@@ -1,5 +1,3 @@
-// js/ui.js
-
 export const screens = {
     splash: document.getElementById('splash-screen'),
     lobby: document.getElementById('lobby-screen'),
@@ -188,4 +186,29 @@ export function displayGameOver(roomData, currentPlayerId, playSound, winSound) 
     showScreen('gameOver');
     const winnerId = roomData.winner;
     const isWinner = winnerId === currentPlayerId;
-    const winnerName = roomData.players[winnerId]?.name || '
+    const winnerName = roomData.players[winnerId]?.name || 'ไม่มีผู้ชนะ';
+    if (isWinner) playSound(winSound);
+    screens.gameOver.className = `game-screen show ${isWinner ? 'win' : 'lose'}`;
+    ui.gameOverTitle.textContent = isWinner ? "🎉 คุณชนะ! 🎉" : "จบเกมแล้ว";
+    ui.winnerName.textContent = `ผู้ชนะคือ: ${winnerName}`;
+    ui.gameOverMessage.textContent = roomData.reason;
+    ui.gameOverNumbersContainer.innerHTML = '';
+    Object.values(roomData.players).forEach(player => {
+        if (player.connected) {
+            const numberBox = document.createElement('div');
+            numberBox.className = 'final-number-box';
+            numberBox.innerHTML = `<div class="final-number-box-title">${player.name}</div><div class="final-number-display">${player.number || '????'}</div>`;
+            ui.gameOverNumbersContainer.appendChild(numberBox);
+        }
+    });
+}
+
+export function updateGameOverUI(roomData, currentPlayerId) {
+    if (roomData.rematch && roomData.rematch[currentPlayerId]) {
+        ui.rematchBtn.textContent = 'กำลังรอเพื่อน...';
+        ui.rematchBtn.disabled = true;
+    } else {
+        ui.rematchBtn.textContent = 'เล่นอีกครั้ง';
+        ui.rematchBtn.disabled = false;
+    }
+}
