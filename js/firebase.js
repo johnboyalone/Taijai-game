@@ -1,3 +1,7 @@
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/database';
+
 const firebaseConfig = {
   apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
   authDomain: "taijai.firebaseapp.com",
@@ -15,6 +19,7 @@ export const auth = firebase.auth();
 export async function signInAnonymously() {
     try {
         await auth.signInAnonymously();
+        console.log("Anonymous sign-in successful.");
     } catch (error) {
         console.error("Anonymous sign-in failed:", error);
     }
@@ -31,12 +36,12 @@ export function getCurrentUserId() {
 export function createRoom(hostName, roomName, password) {
     const newRoomId = db.ref('rooms').push().key;
     const userId = getCurrentUserId();
-    const newPlayerId = 'player1';
+    const newPlayerId = `player${1}`;
 
     const roomData = {
         roomName, hostName, password,
         players: {
-            'player1': { uid: userId, name: hostName, connected: true, isHost: true, numberSet: false, finalChances: 3, status: 'playing' },
+            [newPlayerId]: { uid: userId, name: hostName, connected: true, isHost: true, numberSet: false, finalChances: 3, status: 'playing' },
             'player2': { uid: null, name: 'ผู้เล่น 2', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
             'player3': { uid: null, name: 'ผู้เล่น 3', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' },
             'player4': { uid: null, name: 'ผู้เล่น 4', connected: false, isHost: false, numberSet: false, finalChances: 3, status: 'playing' }
@@ -46,7 +51,8 @@ export function createRoom(hostName, roomName, password) {
         turn: null,
         turnOrder: [],
         rematch: {},
-        lastAction: null
+        lastAction: null,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
     return db.ref('rooms/' + newRoomId).set(roomData).then(() => {
@@ -59,7 +65,11 @@ export function listenToRoomList(callback) {
     const listener = roomsRef.on('value', snapshot => {
         const rooms = [];
         snapshot.forEach(childSnapshot => {
-            rooms.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            const roomData = childSnapshot.val();
+            // กรองห้องที่เจ้าของห้องยังเชื่อมต่ออยู่
+            if (roomData && roomData.players && roomData.players.player1 && roomData.players.player1.connected) {
+                rooms.push({ id: childSnapshot.key, ...roomData });
+            }
         });
         callback(rooms);
     });
@@ -79,17 +89,19 @@ export function verifyPassword(roomId, password) {
 }
 
 export function joinRoom(roomId, joinerName) {
-    const roomRef = db.ref(`rooms/${roomId}`);
     const userId = getCurrentUserId();
+    if (!userId) {
+        return Promise.reject(new Error("ผู้ใช้ไม่ได้ล็อกอิน"));
+    }
+
+    const roomRef = db.ref(`rooms/${roomId}`);
 
     return roomRef.child('players').transaction(players => {
         if (players) {
-            let playerCount = Object.values(players).filter(p => p.connected).length;
-            if (playerCount >= 4) return;
-
             let availableSlotId = null;
             for (const playerId in players) {
-                if (!players[playerId].connected) {
+                // ตรวจสอบช่องที่ว่างและไม่มี uid
+                if (!players[playerId].connected && !players[playerId].uid) {
                     availableSlotId = playerId;
                     break;
                 }
@@ -100,7 +112,7 @@ export function joinRoom(roomId, joinerName) {
                 players[availableSlotId].name = joinerName;
                 players[availableSlotId].uid = userId;
             } else {
-                return;
+                return; // ยกเลิกการ transaction ถ้าไม่มีช่องว่าง
             }
         }
         return players;
@@ -110,13 +122,13 @@ export function joinRoom(roomId, joinerName) {
         }
         const players = result.snapshot.val();
         const newPlayerId = Object.keys(players).find(pId => players[pId].uid === userId);
-        
+
         if (!newPlayerId) {
-             throw new Error("เกิดข้อผิดพลาดในการหาข้อมูลผู้เล่น");
+            throw new Error("เกิดข้อผิดพลาดในการหาข้อมูลผู้เล่น");
         }
 
         roomRef.child('playerCount').set(firebase.database.ServerValue.increment(1));
-        
+
         return { newRoomId: roomId, newPlayerId: newPlayerId };
     });
 }
