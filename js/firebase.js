@@ -81,35 +81,43 @@ export function verifyPassword(roomId, password) {
 export function joinRoom(roomId, joinerName) {
     const roomRef = db.ref(`rooms/${roomId}`);
     const userId = getCurrentUserId();
-    return roomRef.transaction(currentRoomData => {
-        if (currentRoomData) {
-            if (currentRoomData.playerCount >= 4) return;
+
+    return roomRef.child('players').transaction(players => {
+        if (players) {
+            let playerCount = Object.values(players).filter(p => p.connected).length;
+            if (playerCount >= 4) return;
 
             let availableSlotId = null;
-            for (const playerId in currentRoomData.players) {
-                if (!currentRoomData.players[playerId].connected) {
+            for (const playerId in players) {
+                if (!players[playerId].connected) {
                     availableSlotId = playerId;
                     break;
                 }
             }
 
             if (availableSlotId) {
-                currentRoomData.players[availableSlotId].connected = true;
-                currentRoomData.players[availableSlotId].name = joinerName;
-                currentRoomData.players[availableSlotId].uid = userId;
-                currentRoomData.playerCount++;
-                currentRoomData.newPlayerId = availableSlotId;
+                players[availableSlotId].connected = true;
+                players[availableSlotId].name = joinerName;
+                players[availableSlotId].uid = userId;
             } else {
                 return;
             }
         }
-        return currentRoomData;
+        return players;
     }).then(result => {
-        if (!result.committed || !result.snapshot.val().newPlayerId) {
+        if (!result.committed) {
             throw new Error("ไม่สามารถเข้าร่วมห้องได้ อาจจะเต็มแล้ว");
         }
-        const finalData = result.snapshot.val();
-        return { newRoomId: roomId, newPlayerId: finalData.newPlayerId };
+        const players = result.snapshot.val();
+        const newPlayerId = Object.keys(players).find(pId => players[pId].uid === userId);
+        
+        if (!newPlayerId) {
+             throw new Error("เกิดข้อผิดพลาดในการหาข้อมูลผู้เล่น");
+        }
+
+        roomRef.child('playerCount').transaction(count => (count || 0) + 1);
+        
+        return { newRoomId: roomId, newPlayerId: newPlayerId };
     });
 }
 
@@ -130,17 +138,11 @@ export function detachRoomListener(listenerData) {
 export function setupDisconnectHandler(roomId, playerId) {
     if (!roomId || !playerId) return;
     const playerRef = db.ref(`rooms/${roomId}/players/${playerId}`);
-    const roomRef = db.ref(`rooms/${roomId}`);
+    const roomCountRef = db.ref(`rooms/${roomId}/playerCount`);
 
-    playerRef.onDisconnect().update({ connected: false }).then(() => {
-        roomRef.onDisconnect().transaction(currentRoomData => {
-            if (currentRoomData && currentRoomData.players[playerId]) {
-                if(currentRoomData.players[playerId].connected) {
-                    currentRoomData.playerCount--;
-                }
-            }
-            return currentRoomData;
-        });
+    playerRef.onDisconnect().update({ connected: false, uid: null });
+    roomCountRef.onDisconnect().transaction(count => {
+        return (count && count > 0) ? count - 1 : 0;
     });
 }
 
@@ -148,5 +150,5 @@ export function cancelDisconnectHandler(roomId, playerId) {
     if (!roomId || !playerId) return;
     const playerRef = db.ref(`rooms/${roomId}/players/${playerId}`);
     playerRef.onDisconnect().cancel();
-    db.ref(`rooms/${roomId}`).onDisconnect().cancel();
+    db.ref(`rooms/${roomId}/playerCount`).onDisconnect().cancel();
 }
