@@ -1,5 +1,5 @@
 import { ref, set, get, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
-import { db, auth, signInAnonymouslyHandler, onAuthStateChangedHandler, createRoom, joinRoom, listenToRoomList, detachRoomListListener, verifyPassword, listenToRoomUpdates, detachRoomListener, setupDisconnectHandler, cancelDisconnectHandler } from './firebase.js';
+import { db, auth, signInAnonymouslyHandler, onAuthStateChangedHandler, createRoom, joinRoom, listenToRoomList, detachRoomListListener, verifyPassword, listenToRoomUpdates, detachRoomListener, setupDisconnectHandler, cancelDisconnectHandler } from './firebase.js'
 import { screens, ui, showScreen, showToast, showActionToast, updateWaitingRoomUI, updateGuessDisplay, updateChances, updateTurnIndicator, updateHistoryLog, updatePlayerSummaryGrid, displayGameOver, updateGameOverUI } from './ui.js';
 import { GUESS_LENGTH, TURN_DURATION, createNumberPad, generateRandomNumber, submitGuess, submitFinalAnswer, skipTurn, requestRematch, resetGameForRematch } from './game.js';
 
