@@ -34,11 +34,9 @@ export function createRoom() {
         return;
     }
 
-    const newRoomId = db.ref('rooms').push().key;
+    const newRoomRef = db.ref('rooms').push();
+    currentRoomId = newRoomRef.key;
     currentPlayerId = 'player1';
-    currentRoomId = newRoomId;
-    localStorage.setItem('currentRoomId', currentRoomId);
-    localStorage.setItem('currentPlayerId', currentPlayerId);
 
     const roomData = {
         roomName, hostName, password,
@@ -53,10 +51,13 @@ export function createRoom() {
         turn: null, 
         turnOrder: [],
         rematch: {},
-        lastAction: null
+        lastAction: null,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
-    db.ref('rooms/' + newRoomId).set(roomData).then(() => {
+    newRoomRef.set(roomData).then(() => {
+        localStorage.setItem('currentRoomId', currentRoomId);
+        localStorage.setItem('currentPlayerId', currentPlayerId);
         showToast(`สร้างห้อง "${roomName}" สำเร็จ!`);
         listenToRoomUpdates();
         showScreen('waiting');
@@ -78,7 +79,6 @@ export function loadAndDisplayRooms() {
             if (!roomData.players) return; 
 
             const playerCount = roomData.playerCount || Object.values(roomData.players).filter(p => p.connected).length;
-
             const roomItem = document.createElement('div');
             roomItem.className = 'room-item';
             roomItem.innerHTML = `<div class="room-info"><div class="room-name">${roomData.roomName}</div><div class="host-name">สร้างโดย: ${roomData.hostName}</div></div><div class="room-status">${playerCount} / 4</div>`;
@@ -129,7 +129,6 @@ export function joinRoom() {
     if (roomListListener) db.ref('rooms').off('value', roomListListener);
 
     const roomRef = db.ref(`rooms/${roomId}`);
-
     roomRef.transaction(currentRoomData => {
         if (currentRoomData) {
             let availableSlotId = null;
@@ -141,16 +140,15 @@ export function joinRoom() {
             }
             if (availableSlotId) {
                 currentPlayerId = availableSlotId;
-                localStorage.setItem('currentRoomId', currentRoomId);
-                localStorage.setItem('currentPlayerId', currentPlayerId);
                 currentRoomData.players[availableSlotId].connected = true;
                 currentRoomData.players[availableSlotId].name = joinerName;
                 currentRoomData.playerCount++;
+                return currentRoomData;
             } else {
-                return; 
+                return; // ห้องเต็มแล้ว, ไม่ทำอะไร
             }
         }
-        return currentRoomData;
+        return; // ห้องไม่มีอยู่แล้ว, ไม่ทำอะไร
     }, (error, committed, snapshot) => {
         if (error) {
             showToast("เกิดข้อผิดพลาด: " + error.message);
@@ -159,6 +157,8 @@ export function joinRoom() {
             showToast("ไม่สามารถเข้าร่วมห้องได้ อาจจะเต็มแล้ว");
             showScreen('lobby');
         } else {
+            localStorage.setItem('currentRoomId', currentRoomId);
+            localStorage.setItem('currentPlayerId', currentPlayerId);
             showToast(`เข้าร่วมห้องสำเร็จ!`);
             listenToRoomUpdates();
             showScreen('waiting');
@@ -279,11 +279,9 @@ export function onDisconnect() {
     if (currentRoomId && currentPlayerId) {
         const playerRef = db.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`);
         playerRef.update({ connected: false });
-        // Optional: Remove player from the room if they were the only one
         db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
             const roomData = snapshot.val();
             if (roomData && Object.values(roomData.players).filter(p => p.connected).length <= 1) {
-                // Remove the room if only one player is left
                 db.ref(`rooms/${currentRoomId}`).remove();
             }
         });
