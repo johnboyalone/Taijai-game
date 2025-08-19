@@ -36,76 +36,99 @@ export function calculateClues(guess, answer) {
 export function createNumberPad(onPadClick) {
     ui.numberPadContainer.innerHTML = '';
     const buttons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ลบ', '0', 'ทาย'];
-    buttons.forEach(val => {
-        const cell = document.createElement('div');
-        cell.className = 'number-cell';
-        cell.textContent = val;
-        if (val === 'ลบ' || val === 'ทาย') cell.classList.add('special');
-        cell.addEventListener('click', () => onPadClick(val));
-        ui.numberPadContainer.appendChild(cell);
+    buttons.forEach(buttonValue => {
+        const button = document.createElement('button');
+        button.className = 'number-pad-btn';
+        button.textContent = buttonValue;
+        button.dataset.value = buttonValue;
+        button.addEventListener('click', onPadClick);
+        ui.numberPadContainer.appendChild(button);
     });
 }
 
-export function submitGuess(currentRoomId, currentPlayerId, currentTargetId, currentGuess) {
-    const guessString = currentGuess.join('');
-    db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.gameState === 'playing' && roomData.turn === currentPlayerId) {
-            const opponentNumber = roomData.players[currentTargetId].number;
-            const clues = calculateClues(currentGuess, opponentNumber.split(''));
-            const guessData = { guess: guessString, strikes: clues.strikes, balls: clues.balls, by: currentPlayerId };
-            if (!roomData.players[currentTargetId].guesses) {
-                roomData.players[currentTargetId].guesses = {};
+export function submitGuess(currentRoomId, currentPlayerId, currentGuess) {
+    if (currentGuess.length !== GUESS_LENGTH) {
+        showToast('กรุณากรอกตัวเลขให้ครบ 4 หลัก');
+        return;
+    }
+    
+    const roomRef = db.ref(`rooms/${currentRoomId}`);
+    roomRef.transaction(roomData => {
+        if (roomData) {
+            const myData = roomData.players[currentPlayerId];
+            if (myData) {
+                const guessStr = currentGuess.join('');
+                if (!myData.guesses) {
+                    myData.guesses = {};
+                }
+                const newGuessKey = db.ref().push().key;
+                myData.guesses[newGuessKey] = {
+                    guess: guessStr,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
             }
-            const newGuessKey = db.ref(`rooms/${currentRoomId}/players/${currentTargetId}/guesses`).push().key;
-            roomData.players[currentTargetId].guesses[newGuessKey] = guessData;
-            
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-            const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-            const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers[nextTurnIndex];
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
-            roomData.lastAction = { actorName: roomData.players[currentPlayerId].name, targetName: roomData.players[currentTargetId].name, type: 'guess', timestamp: Date.now() };
         }
         return roomData;
+    }).then(() => {
+        skipTurn(currentRoomId, currentPlayerId);
     });
 }
 
-export function submitFinalAnswer(currentRoomId, currentPlayerId, currentTargetId, currentGuess, playSound, wrongSound) {
-    const finalAnswer = currentGuess.join('');
-    db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.gameState === 'playing' && roomData.turn === currentPlayerId) {
-            const targetPlayer = roomData.players[currentTargetId];
-            const actorPlayer = roomData.players[currentPlayerId];
-            let actionType = '';
-            if (finalAnswer === targetPlayer.number) {
-                targetPlayer.status = 'eliminated';
-                actionType = 'final_correct';
+export function submitFinalAnswer(currentRoomId, currentPlayerId, currentGuess, targetPlayerId) {
+    if (!targetPlayerId) {
+        showToast('กรุณาเลือกเป้าหมายที่จะทาย');
+        return;
+    }
+    if (currentGuess.length !== GUESS_LENGTH) {
+        showToast('กรุณากรอกตัวเลขให้ครบ 4 หลัก');
+        return;
+    }
+    
+    const roomRef = db.ref(`rooms/${currentRoomId}`);
+    roomRef.transaction(roomData => {
+        if (roomData) {
+            const myData = roomData.players[currentPlayerId];
+            const targetData = roomData.players[targetPlayerId];
+            if (!myData || !targetData) return;
+
+            const guessStr = currentGuess.join('');
+            const answerStr = targetData.number;
+            
+            if (guessStr === answerStr) {
+                myData.status = 'playing';
+                targetData.status = 'eliminated';
+                roomData.lastAction = `${myData.name} ทายถูก! ${targetData.name} ถูกกำจัด!`;
             } else {
-                playSound(wrongSound);
-                actorPlayer.finalChances--;
-                if (actorPlayer.finalChances <= 0) actorPlayer.status = 'eliminated';
-                actionType = 'final_wrong';
+                myData.finalChances--;
+                if (myData.finalChances <= 0) {
+                    myData.status = 'eliminated';
+                    roomData.lastAction = `${myData.name} ทายผิดและถูกกำจัด!`;
+                } else {
+                    const { strikes, balls } = calculateClues(currentGuess, answerStr.split(''));
+                    roomData.lastAction = `${myData.name} ทาย ${targetData.name} ได้ ${strikes} Strikes, ${balls} Balls`;
+                }
             }
-            roomData.lastAction = { actorName: actorPlayer.name, targetName: targetPlayer.name, type: actionType, timestamp: Date.now() };
-            
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-            const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-            const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers[nextTurnIndex];
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
         }
         return roomData;
+    }).then(() => {
+        skipTurn(currentRoomId, currentPlayerId);
     });
 }
 
 export function skipTurn(currentRoomId, currentPlayerId) {
-    db.ref(`rooms/${currentRoomId}`).transaction(roomData => {
-        if (roomData && roomData.gameState === 'playing' && roomData.turn === currentPlayerId) {
-            const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-            const currentTurnIndex = activePlayers.indexOf(roomData.turn);
-            const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
-            roomData.turn = activePlayers[nextTurnIndex];
-            roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
+    const roomRef = db.ref(`rooms/${currentRoomId}`);
+    roomRef.transaction(roomData => {
+        if (roomData && roomData.turn === currentPlayerId) {
+            const activePlayers = roomData.turnOrder.filter(pId => roomData.players[pId].status === 'playing');
+            if (activePlayers.length > 0) {
+                const currentTurnIndex = activePlayers.indexOf(currentPlayerId);
+                const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
+                roomData.turn = activePlayers[nextTurnIndex];
+                roomData.turnStartTime = firebase.database.ServerValue.TIMESTAMP;
+            } else {
+                // No active players left, handle game over
+                roomData.gameState = 'finished';
+            }
         }
         return roomData;
     });
@@ -134,5 +157,6 @@ export function resetGameForRematch(currentRoomId, roomData) {
             updates[`rooms/${currentRoomId}/players/${playerId}/number`] = null;
         }
     });
+
     db.ref().update(updates);
 }
