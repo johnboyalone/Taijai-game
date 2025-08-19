@@ -1,19 +1,29 @@
+// Wrap everything in a DOMContentLoaded listener
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM fully loaded and parsed. Initializing script...");
 
     // =================================================================
     // ======== FIREBASE CONFIG & INITIALIZATION ========
     // =================================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
-      authDomain: "taijai.firebaseapp.com",
-      databaseURL: "https://taijai-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "taijai",
-      storageBucket: "taijai.appspot.com",
-      messagingSenderId: "262573756581",
-      appId: "1:262573756581:web:c17bfc795b5cf139693d4c"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    try {
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAeQyoxlwHv8Qe9yrsoxw0U5SFHTGzk8o",
+            authDomain: "taijai.firebaseapp.com",
+            databaseURL: "https://taijai-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "taijai",
+            storageBucket: "taijai.appspot.com",
+            messagingSenderId: "262573756581",
+            appId: "1:262573756581:web:c17bfc795b5cf139693d4c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        window.db = firebase.database();
+        console.log("Firebase initialized successfully.");
+    } catch (e) {
+        console.error("Firebase initialization failed:", e);
+        alert("ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ กรุณาลองรีเฟรชหน้าจอ");
+        return;
+    }
+
 
     // =================================================================
     // ======== GAME STATE VARIABLES ========
@@ -27,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const GUESS_LENGTH = 4;
     let isMuted = false;
     let turnTimerInterval = null;
-    const TURN_DURATION = 30; // **ปรับเวลาเพิ่มเป็น 30 วินาทีเพื่อให้ทุกคนมีเวลาทาย**
+    const TURN_DURATION = 30;
 
     // =================================================================
     // ======== AUDIO REFERENCES & FUNCTIONS ========
@@ -111,20 +121,23 @@ document.addEventListener('DOMContentLoaded', function() {
         actionToastText: document.getElementById('action-toast-text'),
         soundControl: document.getElementById('sound-control'),
         soundIcon: document.getElementById('sound-icon'),
-        // **เพิ่ม UI Elements สำหรับซ่อน/แสดง**
         guessControlsSection: document.querySelector('.guess-controls'),
         finalAnswerSection: document.querySelector('.final-answer-section'),
-        playerSummarySection: document.querySelector('.section:has(#player-summary-grid)'),
-        historySection: document.querySelector('.section:has(#history-log)')
+        playerSummarySection: document.querySelector('.section-player-summary'),
+        historySection: document.querySelector('.section-history')
     };
-
     // =================================================================
     // ======== CORE APP FLOW & SCREEN MANAGEMENT ========
     // =================================================================
 
     function showScreen(screenName) {
+        console.log(`Switching to screen: ${screenName}`);
         Object.values(screens).forEach(screen => screen.classList.remove('show'));
-        if (screens[screenName]) screens[screenName].classList.add('show');
+        if (screens[screenName]) {
+            screens[screenName].classList.add('show');
+        } else {
+            console.error(`Screen "${screenName}" not found.`);
+        }
     }
 
     function showToast(message) {
@@ -138,21 +151,24 @@ document.addEventListener('DOMContentLoaded', function() {
         ui.actionToast.classList.add('show');
         setTimeout(() => ui.actionToast.classList.remove('show'), duration);
     }
+
     // =================================================================
     // ======== LOBBY & ROOM MANAGEMENT ========
     // =================================================================
 
     function setupInitialListeners() {
-        ui.soundControl.addEventListener('click', toggleMute);
-
+        console.log("Setting up initial listeners...");
+        
         screens.splash.addEventListener('click', () => {
+            console.log("Splash screen clicked.");
             playSound(sounds.click);
             showScreen('lobby');
             if (sounds.background.paused && !isMuted) {
-                sounds.background.play().catch(e => console.log("Autoplay was prevented."));
+                sounds.background.play().catch(e => console.log("Autoplay was prevented. User interaction needed."));
             }
         });
 
+        ui.soundControl.addEventListener('click', toggleMute);
         ui.goToCreateBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('createRoom'); });
         ui.goToJoinBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('roomList'); loadAndDisplayRooms(); });
         ui.confirmCreateBtn.addEventListener('click', () => { playSound(sounds.click); createRoom(); });
@@ -175,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             turn: connectedPlayerIds[0],
                             turnStartTime: firebase.database.ServerValue.TIMESTAMP,
                             lastAction: null,
-                            turnState: null // **เพิ่ม state สำหรับการทายในแต่ละตา**
+                            turnState: null
                         };
                         db.ref(`rooms/${currentRoomId}`).update(updates);
                     }
@@ -186,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ui.submitFinalAnswerBtn.addEventListener('click', submitFinalAnswer);
         ui.rematchBtn.addEventListener('click', () => { playSound(sounds.click); requestRematch(); });
         ui.backToLobbyBtn.addEventListener('click', () => window.location.reload());
+        console.log("Initial listeners setup complete.");
     }
 
     function toggleMute() {
@@ -391,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'playing':
                     updatePlayingUI(roomData);
-                    handleAutoTurnChange(roomData); // **เพิ่ม Logic การเปลี่ยนตารอบใหม่**
+                    handleAutoTurnChange(roomData);
                     break;
                 case 'finished':
                     if (turnTimerInterval) clearInterval(turnTimerInterval);
@@ -401,23 +418,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // **ฟังก์ชันใหม่สำหรับจัดการการเปลี่ยนตา**
     function handleAutoTurnChange(roomData) {
         const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
-        if (activePlayers.length <= 1) return; // ไม่ต้องเปลี่ยนตาถ้าเหลือคนเดียว
+        if (activePlayers.length <= 1) return;
 
         const targetId = roomData.turn;
         const playersWhoShouldGuess = activePlayers.filter(id => id !== targetId);
         const playersWhoHaveGuessed = roomData.turnState ? Object.keys(roomData.turnState) : [];
 
-        // เช็คว่าทุกคนที่ต้องทาย ได้ทายครบแล้วหรือยัง
         if (playersWhoHaveGuessed.length >= playersWhoShouldGuess.length) {
             changeTurn(roomData);
         }
     }
 
-    // **ฟังก์ชันใหม่สำหรับเปลี่ยนตา**
     function changeTurn(roomData) {
         const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
         if (activePlayers.length <= 1) return;
@@ -429,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         db.ref(`rooms/${currentRoomId}`).update({
             turn: nextTurnPlayerId,
             turnStartTime: firebase.database.ServerValue.TIMESTAMP,
-            turnState: null // รีเซ็ตสถานะการทายสำหรับตารอบใหม่
+            turnState: null
         });
     }
 
@@ -503,9 +516,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ui.rematchBtn.disabled = false;
         }
     }
-    // =================================================================
-    // ======== GAME LOGIC & UI ========
-    // =================================================================
 
     function initializeGameUI(roomData) {
         showScreen('game');
@@ -528,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
             card.className = 'player-summary-card';
             card.dataset.playerId = playerId;
             if (playerData.status === 'eliminated') card.classList.add('is-eliminated');
-            if (playerId === roomData.turn) card.classList.add('is-target'); // คนที่โดนทายคือ Target
+            if (playerId === roomData.turn) card.classList.add('is-target');
             card.innerHTML = `<div class="summary-card-name">${playerData.name}</div><div class="summary-card-status">${playerData.status === 'eliminated' ? 'แพ้แล้ว' : 'กำลังเล่น'}</div>`;
             ui.playerSummaryGrid.appendChild(card);
         });
@@ -582,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const guessString = currentGuess.join('');
         db.ref(`rooms/${currentRoomId}`).get().then(snapshot => {
             const roomData = snapshot.val();
-            if (!roomData || roomData.turn === currentPlayerId) return; // กันไม่ให้เป้าหมายทายตัวเอง
+            if (!roomData || roomData.turn === currentPlayerId) return;
 
             const targetId = roomData.turn;
             const opponentNumber = roomData.players[targetId].number;
@@ -598,12 +608,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const historyPath = `rooms/${currentRoomId}/players/${targetId}/guesses`;
             const newGuessKey = db.ref(historyPath).push().key;
-            db.ref(`${historyPath}/${newGuessKey}`).set(guessData);
-
-            // บันทึกว่าเราทายแล้ว และอัปเดต lastAction
+            
             const updates = {};
-            updates[`turnState/${currentPlayerId}`] = true;
-            updates['lastAction'] = {
+            updates[`rooms/${currentRoomId}/${historyPath}/${newGuessKey}`] = guessData;
+            updates[`rooms/${currentRoomId}/turnState/${currentPlayerId}`] = true;
+            updates[`rooms/${currentRoomId}/lastAction`] = {
                 actorName: roomData.players[currentPlayerId].name,
                 targetName: roomData.players[targetId].name,
                 type: 'guess',
@@ -611,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 clues: clues,
                 timestamp: Date.now()
             };
-            db.ref(`rooms/${currentRoomId}`).update(updates);
+            db.ref().update(updates);
 
             currentGuess = [];
             updateGuessDisplay();
@@ -640,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateHistoryLog(roomData) {
         ui.historyLog.innerHTML = '';
-        const targetId = roomData.turn; // ประวัติจะแสดงของคนที่กำลังโดนทาย
+        const targetId = roomData.turn;
         const targetData = roomData.players[targetId];
         ui.historyTargetName.textContent = targetData.name;
         if (!targetData.guesses) return;
@@ -652,8 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (item.strikes > 0) cluesHTML += `<div class="clue-box clue-strike">${item.strikes}S</div>`;
             if (item.balls > 0) cluesHTML += `<div class="clue-box clue-ball">${item.balls}B</div>`;
             if (item.strikes === 0 && item.balls === 0) cluesHTML = `<div class="clue-box clue-out">OUT</div>`;
-            // แสดงชื่อคนทายในประวัติ
-            historyItem.innerHTML = `<div class="history-guesser">${item.byName}:</div><div class="history-guess">${item.guess}</div><div class="history-clues">${cluesHTML}</div>`;
+            historyItem.innerHTML = `<div class="history-guesser">${item.byName || '??'}:</div><div class="history-guess">${item.guess}</div><div class="history-clues">${cluesHTML}</div>`;
             ui.historyLog.appendChild(historyItem);
         });
         ui.historyLog.scrollTop = ui.historyLog.scrollHeight;
@@ -675,17 +683,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (finalAnswer === targetPlayer.number) {
                     targetPlayer.status = 'eliminated';
                     actionType = 'final_correct';
-                    // เมื่อมีคนทายถูก ให้เปลี่ยนตาทันที
-                    const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing');
+                    
+                    const activePlayers = roomData.turnOrder.filter(id => roomData.players[id].status === 'playing' && id !== targetId);
                     const currentTurnIndex = activePlayers.indexOf(roomData.turn);
                     const nextTurnIndex = (currentTurnIndex + 1) % activePlayers.length;
                     roomData.turn = activePlayers[nextTurnIndex];
-                    roomData.turnState = null; // รีเซ็ต
+                    roomData.turnState = null;
                 } else {
                     playSound(sounds.wrong);
                     actorPlayer.finalChances--;
-                    if (actorPlayer.finalChances <= 0) actorPlayer.status = 'eliminated';
+                    if (actorPlayer.finalChances <= 0) {
+                        actorPlayer.status = 'eliminated';
+                    }
                     actionType = 'final_wrong';
+                    if (!roomData.turnState) roomData.turnState = {};
+                    roomData.turnState[currentPlayerId] = true;
                 }
                 roomData.lastAction = { actorName: actorPlayer.name, targetName: targetPlayer.name, type: actionType, timestamp: Date.now() };
             }
@@ -708,33 +720,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const myData = roomData.players[currentPlayerId];
         const alreadyGuessed = roomData.turnState && roomData.turnState[currentPlayerId];
 
-        if (isTarget) {
-            // เราคือเป้าหมาย (โดนทาย)
+        if (myData.status !== 'playing') {
+            ui.guessControlsSection.style.display = 'none';
+            ui.finalAnswerSection.style.display = 'none';
+            const targetPlayerName = roomData.players[targetId]?.name || 'เป้าหมาย';
+            ui.turnIndicator.className = 'turn-indicator their-turn';
+            ui.turnText.textContent = `กำลังรับชม... ตาของ ${targetPlayerName}`;
+
+        } else if (isTarget) {
+            playSound(sounds.turn);
             ui.turnIndicator.className = 'turn-indicator their-turn';
             ui.turnText.textContent = "ตาของคุณ! ทุกคนกำลังทายเลขคุณ";
             ui.guessControlsSection.style.display = 'none';
             ui.finalAnswerSection.style.display = 'none';
-            ui.historySection.style.display = 'block';
-            ui.playerSummarySection.style.display = 'block';
-        } else if (myData.status === 'playing') {
-            // เราเป็นคนทาย
+        } else {
             const targetPlayerName = roomData.players[targetId]?.name || 'เป้าหมาย';
             ui.turnIndicator.className = 'turn-indicator my-turn';
-            ui.turnText.textContent = `ทายเลขของ ${targetPlayerName}!`;
+            
             if (alreadyGuessed) {
+                ui.turnText.textContent = `รอผู้เล่นคนอื่นทาย ${targetPlayerName}...`;
                 ui.guessControlsSection.style.display = 'none';
                 ui.finalAnswerSection.style.display = 'none';
-                ui.turnText.textContent = `รอผู้เล่นคนอื่น...`;
             } else {
+                ui.turnText.textContent = `ทายเลขของ ${targetPlayerName}!`;
                 ui.guessControlsSection.style.display = 'block';
                 ui.finalAnswerSection.style.display = 'block';
             }
-            ui.historySection.style.display = 'block';
-            ui.playerSummarySection.style.display = 'block';
-        } else {
-            // เราแพ้แล้ว
-            ui.guessControlsSection.style.display = 'none';
-            ui.finalAnswerSection.style.display = 'none';
         }
     }
 
@@ -752,22 +763,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 ui.turnTimerDisplay.textContent = timeLeft;
             }
 
-            if (timeLeft <= 0) {
+            if (timeLeft < 0) {
                 clearInterval(turnTimerInterval);
-                // เช็คจากฐานข้อมูลว่ายังเป็นตาเดิมอยู่ไหม ก่อนจะเปลี่ยนตา
                 db.ref(`rooms/${currentRoomId}/turn`).get().then(snapshot => {
                     if (snapshot.val() === roomData.turn) {
-                        showToast("หมดเวลา! เปลี่ยนตาอัตโนมัติ");
                         changeTurn(roomData);
                     }
                 });
             }
         }, 1000);
     }
-
-    // =================================================================
-    // ======== GAME OVER & REMATCH ========
-    // =================================================================
 
     function displayGameOver(roomData) {
         if (turnTimerInterval) clearInterval(turnTimerInterval);
