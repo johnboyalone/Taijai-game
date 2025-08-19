@@ -115,7 +115,7 @@ export function joinRoom(roomId, joinerName) {
              throw new Error("เกิดข้อผิดพลาดในการหาข้อมูลผู้เล่น");
         }
 
-        roomRef.child('playerCount').transaction(count => (count || 0) + 1);
+        roomRef.child('playerCount').set(firebase.database.ServerValue.increment(1));
         
         return { newRoomId: roomId, newPlayerId: newPlayerId };
     });
@@ -141,9 +141,7 @@ export function setupDisconnectHandler(roomId, playerId) {
     const roomCountRef = db.ref(`rooms/${roomId}/playerCount`);
 
     playerRef.onDisconnect().update({ connected: false, uid: null });
-    roomCountRef.onDisconnect().transaction(count => {
-        return (count && count > 0) ? count - 1 : 0;
-    });
+    roomCountRef.onDisconnect().set(firebase.database.ServerValue.increment(-1));
 }
 
 export function cancelDisconnectHandler(roomId, playerId) {
